@@ -1,0 +1,134 @@
+{
+  "status": "contract_invalid",
+  "error": "检测到对 final-test 数据的实际访问。\n禁止的位置：\n  - representation.normalization\n\n候选算法只能使用 development_train 和 development_validation。",
+  "hypothesis_source": "research_agent",
+  "hypothesis": {
+    "id": "C002_H03",
+    "name": "Sparse symbolic identification with learned closure residual",
+    "scientific_question": "Is the dominant ROM error caused by an inadequate or non-interpretable nonlinear basis in the latent space, such that enforcing sparsity and physical interpretability of the identified dynamics — while absorbing the remainder in a small learned residual — yields both better generalization and a falsifiable, inspectable model?",
+    "mechanism": "A sparse symbolic/linear-combination mode is identified on the latent dynamics (e.g., SINDy-style selection over a candidate library of polynomial, trigonometric, and physically motivated terms), producing an interpretable closed-form component. A small learned network then models the residual closure term that the sparse basis misses. This is mechanistically distinct from C001_H01/H02/H03 which use no-learned symbolic structure; here the dominant dynamics must be expressible in a compact, named basis and the remainder must be genuinely small.",
+    "mathematical_form": "dz/dt = Ξ^T Θ(z) + R_θ(z), where Ξ is a sparse coefficient matrix identified by sequential thresholded least squares over a library Θ (e.g., {1, z_i, z_i z_j, sin(z_k), ...}), and R_θ is a small neural closure. The sparsity is enforced by hard thresholding or STRRidge; the residual is trained to match (dz/dt − Ξ^T Θ(z)) on data.",
+    "motivation": "When reduced-order models fail, a common scientific reason is that the chosen basis is too rigid (POD modes miss interactions) or too unstructured (neural networks memorize without generalization). A sparse symbolic identification step provides an inspectable, low-dimensional, physically interpretable skeleton; the closure residual then captures only what the skeleton misses. If the residual turns out to be large, the falsifiable interpretation is that the chosen library is inadequate; if the residual is small and generalization improves, the sparse basis is the right scientific explanation.",
+    "explanation_of_previous_failure": "C001_H01 relied on a generic delay-embedding map with no symbolic structure; C001_H02 imposed a spatial constraint but left the temporal map generic; C001_H03 split scales but did not require identifiability of the dominant terms. None produced a sparse, named, inspectable form for the dynamics. If the failure is due to an unidentifiable, over-parameterized latent map that does not generalize, a sparse skeleton plus small residual should outperform a pure black box at matched capacity.",
+    "distinguishing_prediction": "On development_validation the sparse+residual model should (i) yield a sparse Ξ (density below a threshold, e.g., <10% nonzero) with named terms that are scientifically plausible; (ii) achieve lower rollout error than a matched-capacity pure black-box baseline at long horizons; (iii) have a residual norm that is small relative to the sparse-skeleton norm. If the residual is large and the sparse skeleton is dense, the basis is inadequate; if the residual is small but rollout error is not better than the black box, the sparsity itself is not the scientific mechanism.",
+    "minimum_experiment": [
+      "Apply sparse symbolic identification to latent dynamics on development_train to obtain a closed-form component Ξ^T Θ(z).",
+      "Train a small residual network on the residual (dz/dt − Ξ^T Θ(z)).",
+      "Train a matched-capacity pure black-box baseline on the same prediction target.",
+      "Evaluate on development_validation: report rollout MSE, density of Ξ, residual-to-skeleton norm ratio, and qualitative inspection of identified terms.",
+      "Falsification criterion: If Ξ is NOT sparse (density ≥ 30%) AND residual norm is comparable to the pure black-box output norm AND rollout MSE is NOT statistically lower than the black-box baseline (paired test, p > 0.05), the sparse-skeleton-plus-residual mechanism is falsified."
+    ],
+    "expected_observation_if_true": "Identified Ξ is sparse with physically meaningful monomials; residual norm is < 50% of skeleton norm; rollout error is lower than matched-capacity black box at long horizons.",
+    "expected_observation_if_false": "Identified Ξ is dense, residual is comparable to a full nonlinear map, and rollout error matches the black box, indicating the chosen library is inadequate and sparsity is not the bottleneck.",
+    "risks": [
+      "Library selection is itself a modeling choice; an inadequate library will mask the mechanism.",
+      "Sparse identification is sensitive to noise and threshold choice; misleading sparsity can occur.",
+      "Closure residual may absorb all dynamics if trained without constraints, defeating the sparsity mechanism."
+    ],
+    "relation_to_existing_methods": "Related to SINDy, gray-box modeling, and equation discovery; differs from neural-only latent ROMs (no symbolic skeleton) and from delay-embedding ROMs (no exogenous closure). Distinct from C001_H03 which separated scales but did not require sparse symbolic identifiability.",
+    "novelty_status": "verification_incomplete",
+    "proposed_id": "H3",
+    "generation_cycle": 2,
+    "generation_source": "llm",
+    "source": "research_agent",
+    "difference_from_existing": "",
+    "why_test": ""
+  },
+  "raw_spec": {
+    "candidate_id": "C002_H03",
+    "name": "Sparse symbolic identification with learned closure residual",
+    "paradigm": "scientific_machine_learning",
+    "scientific_claim": "A dominant fraction of the latent dynamics can be captured by a sparse linear combination of named candidate functions (polynomial and trigonometric features), and a small neural network trained on the residual closure is sufficient to recover the remainder; this yields lower rollout error than a matched-capacity pure black-box map and produces an inspectable, named symbolic skeleton.",
+    "hypothesis": {
+      "source": "research_agent",
+      "motivation": "Prior failed candidates used either generic neural maps, generic delay embeddings, or scale-splitting with no symbolic identifiability requirement; if the dominant ROM error comes from an over-parameterized or unidentifiable nonlinear latent map, replacing the mapping with a sparse interpretable skeleton plus a small learned residual should improve generalization and produce a falsifiable model.",
+      "novelty_status": "verification_incomplete"
+    },
+    "representation": {
+      "input_state": "z_t",
+      "latent_dimension": 8,
+      "normalization": "standard score on development_train per latent coordinate; no access to final_test"
+    },
+    "dynamics": {
+      "equation": "z_next = z_t + dt * ( Xi_T @ Theta(z_t) + R_theta(z_t) )",
+      "inputs": [
+        "z_t"
+      ],
+      "outputs": [
+        "z_next"
+      ],
+      "parameters": [
+        "Xi (sparse coefficient matrix over candidate library)",
+        "Theta (feature library: constant, linear z_i, quadratic z_i*z_j, sin(z_k), cos(z_k))",
+        "R_theta (small MLP closure weights)",
+        "dt (integration step supplied per environment step)"
+      ],
+      "operator_structure": "linear-in-parameters symbolic skeleton (SINDy-style thresholded least squares over a fixed named library) plus a small low-capacity nonlinear neural closure; the skeleton is identified first and held fixed, then R_theta is trained on the residual (dz/dt - Xi_T @ Theta(z))",
+      "stability_mechanism": "rollout uses bounded one-step increments with a hard Lipschitz-style clip on R_theta output norm; symbolic skeleton is identified via STLS with hard thresholding so coefficients remain finite; no unstable recurrent unrolling during training"
+    },
+    "training": {
+      "training_split": "development_train",
+      "validation_split": "development_validation",
+      "loss": "stage 1 skeleton: squared error on dz/dt with sparsity-inducing hard threshold; stage 2 residual network: MSE on (dz/dt - Xi_T Theta(z)); combined rollout loss on development_validation for early stopping",
+      "optimizer": "Adam with learning rate 1e-3 for residual MLP; coefficient solver is closed-form ridge for each STLS pass",
+      "max_epochs": 150,
+      "early_stopping": true
+    },
+    "evaluation": {
+      "metrics": [
+        "rollout MSE on development_validation at horizons 1, 10, 50, 200",
+        "one-step MSE",
+        "Xi density (fraction of nonzero coefficients)",
+        "residual to skeleton norm ratio: ||R_theta(z)|| / ||Xi_T Theta(z)||",
+        "named-term inspection (print which library entries receive nonzero Xi)",
+        "paired bootstrap test vs matched-capacity black-box baseline at long horizon"
+      ],
+      "rollout_horizons": [
+        1,
+        10,
+        50,
+        200
+      ],
+      "baselines": [
+        "matched-capacity pure black-box MLP with same parameter count trained on the same dz/dt target",
+        "constant-zero skeleton baseline (R_theta only)"
+      ]
+    },
+    "data_policy": {
+      "allowed_split": [
+        "development_train",
+        "development_validation"
+      ],
+      "forbidden_split": [
+        "final_test"
+      ],
+      "final_test_access": false
+    },
+    "falsification": {
+      "success_condition": "Xi density below 10 percent with physically plausible named terms, residual to skeleton norm ratio below 0.5, and rollout MSE at the long horizon statistically lower than the matched-capacity black-box baseline (paired test p below 0.05)",
+      "failure_condition": "Xi density at or above 30 percent AND residual norm comparable to the pure black-box output norm AND rollout MSE not statistically lower than the black-box baseline (paired test p above 0.05)"
+    },
+    "implementation_plan": {
+      "modules": [
+        "feature_library.py: builds Theta(z) for constant, linear, quadratic, sin, cos terms given latent_dim",
+        "stls.py: sequential thresholded least squares to solve for sparse Xi with configurable threshold",
+        "residual_mlp.py: small MLP for R_theta with capacity matched to combined-model parameter budget",
+        "combined_model.py: forward dz/dt = Xi_T Theta(z) + R_theta(z) with rollout integrator",
+        "matched_blackbox.py: pure MLP baseline with matched parameter count",
+        "evaluator.py: rollout MSE, density, norm ratios, paired bootstrap p-value, named-term dump"
+      ],
+      "pseudocode": [
+        "step 1: load development_train, compute z_t and finite-difference dz/dt targets",
+        "step 2: build feature matrix Theta(z_t) using feature_library for all training samples",
+        "step 3: solve Xi via STLS: loop regress dz/dt on Theta, threshold small coefficients to zero, repeat until stable; record density and nonzero term indices",
+        "step 4: compute skeleton residual r_t = dz/dt_t - Xi_T @ Theta(z_t) on development_train",
+        "step 5: train residual_mlp R_theta on (z_t, r_t) using Adam with MSE loss; validate on development_validation for early stopping",
+        "step 6: train matched_blackbox on (z_t, dz/dt_t) with identical parameter budget and the same optimizer",
+        "step 7: rollout both models autoregressively on development_validation for horizons 1, 10, 50, 200; record rollout MSE",
+        "step 8: compute diagnostics: Xi density, ||R_theta(z)|| / ||Xi_T Theta(z)|| ratio, list of named nonzero terms",
+        "step 9: paired bootstrap test on rollout MSE at the long horizon between combined model and black-box baseline; report p-value",
+        "step 10: emit pass or fail based on falsification criteria"
+      ]
+    }
+  }
+}

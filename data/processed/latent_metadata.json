@@ -1,0 +1,11 @@
+{
+  "latent_dimension": 52,
+  "num_snapshots": 400,
+  "target_energy": 0.999,
+  "trajectory_shape": [
+    52,
+    400
+  ],
+  "definition": "Z = Sigma_r @ V_r.T",
+  "latent_path": "data\\processed\\latent_trajectory.npy"
+}

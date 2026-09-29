@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "candidate_id": "H3",
+  "candidate_name": "Mass-conserving diffusion-reaction latent operator with explicit 26-26 reactant/product block split",
+  "code_source": "llm",
+  "model_path": "algorithms\\discovered\\implementation\\model.py",
+  "validation": {
+    "status": "valid",
+    "required_methods": [
+      "__init__",
+      "fit",
+      "predict_next",
+      "rollout"
+    ],
+    "candidate_class": "CandidateModel"
+  }
+}

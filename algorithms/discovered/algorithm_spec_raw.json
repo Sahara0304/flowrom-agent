@@ -1,0 +1,202 @@
+{
+  "candidate_id": "H3",
+  "name": "Mass-conserving diffusion-reaction latent operator with explicit 26-26 reactant/product block split",
+  "paradigm": "classical",
+  "scientific_claim": "The 52D latent dynamics admit a decomposition into a 26D reactant block and a 26D product block coupled by a learnable symmetric positive semi-definite linear diffusion D (parameterized via Cholesky factor L_D with D = L_D L_D^T) and a learnable reaction R acting on the reactant block, structured so that the linear mass M_t = sum(z_t) is conserved exactly by construction; this operator should match a dense global linear baseline on one-step prediction and substantially outperform it on multi-step rollout because of the hard mass conservation.",
+  "hypothesis": {
+    "source": "research_agent",
+    "motivation": "Reduced-order models of scalar-transport and reaction-diffusion processes in fluids have a natural decomposition into reactant and product blocks with a mass-conserving diffusion-reaction structure. The hypothesis is that if the 52D POD latent preserves any of this structure, an operator with a hard block split, a hard mass conservation constraint, and a learnable reaction term will outperform a generic linear operator on multi-step rollout. The combination of block structure + hard conservation + learned reaction is novel relative to prior hypotheses (e.g. C002_H01 used a stronger symplectic single-form conservation with no block split or reaction).",
+    "novelty_status": "verification_incomplete"
+  },
+  "representation": {
+    "input_state": "z_t (52-dimensional POD latent magnitude vector)",
+    "latent_dimension": 52,
+    "normalization": "POD latent coefficients from development training data; no additional normalization."
+  },
+  "dynamics": {
+    "equation": "z_{t+1} = A z_t + g(z_t); A = I + M_C; M_C = [[-D, 0_26], [D, 0_26]] (52x52 mass-conserving block matrix); D = L_D L_D^T with L_D lower-triangular 26x26; g(z) = (P^T - Q^T) R(P z) where P in R^{26x52} selects the reactant block and Q = I - P^T P selects the product block, so R is subtracted from the reactant block and added to the product block",
+    "inputs": [
+      "latent_state"
+    ],
+    "outputs": [
+      "latent_state_next"
+    ],
+    "parameters": [
+      "L_D (Cholesky factor of the 26x26 diffusion D, lower-triangular, real-valued)",
+      "W_R1 (32x26), b_R1 (32,) — first layer of reaction MLP",
+      "W_R2 (26x32), b_R2 (26,) — second layer of reaction MLP",
+      "reactant_index_set (26 indices) and product_index_set (26 indices), fixed from development_train k-means preprocessing"
+    ],
+    "operator_structure": "Block-diagonal mass-conserving linear core (identity plus a 52x52 mass-conserving block transfer matrix built from a 26x26 symmetric PSD diffusion D) plus a mass-neutral nonlinear reaction residual that pulls R(z^R) out of the reactant block and pushes it into the product block, guaranteeing 1^T (A z + g(z)) = 1^T z for all z",
+    "stability_mechanism": "Hard structural mass conservation: 1^T A = 1^T by construction (1^T M_C = 0 since column sums of the upper and lower blocks cancel) and 1^T g(z) = 0 by construction (R subtracted and added across the two blocks), so M_t is exactly preserved at every step; diffusion D is parameterized as L_D L_D^T so it is symmetric positive semi-definite, and the reaction MLP has bounded Lipschitz behavior under standard initialization",
+    "type": "residual_operator"
+  },
+  "implementation_requirements": {
+    "required_inputs": [
+      "latent_state"
+    ],
+    "required_history": 0,
+    "required_representation": "POD_latent",
+    "required_latent_dimension": 52,
+    "required_external_parameters": [],
+    "required_field_components": []
+  },
+  "training": {
+    "training_split": "development_train",
+    "validation_split": "development_validation",
+    "loss": "one-step squared error ||z_{t+1} - A z_t - g(z_t)||^2 averaged over development_train; mass conservation is enforced structurally, not via penalty",
+    "optimizer": "Adam with learning rate 1e-3",
+    "max_epochs": 200,
+    "early_stopping": true
+  },
+  "evaluation": {
+    "metrics": [
+      "one_step_mse_on_development_validation",
+      "multi_step_mse_at_horizons_1_5_10_20_40_80_on_development_validation",
+      "relative_mass_drift_per_step_over_20_step_rollout",
+      "cumulative_relative_mass_drift_at_horizon_20",
+      "reaction_to_diffusion_magnitude_ratio_||R(z)||_mean_over_||D z^R||_mean_on_development_train",
+      "diffusion_condition_number_cond_D",
+      "one_step_mse_ratio_to_dense_global_linear_baseline",
+      "multi_step_mse_ratio_to_dense_global_linear_baseline_at_each_horizon"
+    ],
+    "rollout_horizons": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      80
+    ],
+    "baselines": [
+      "global_linear_operator",
+      "persistence"
+    ]
+  },
+  "data_policy": {
+    "allowed_split": [
+      "development_train",
+      "development_validation"
+    ],
+    "forbidden_split": [
+      "final_test"
+    ],
+    "final_test_access": false
+  },
+  "falsification": {
+    "success_condition": "(i) one_step_mse on development_validation is within 5% of the dense global linear baseline; (ii) relative mass drift per step over a 20-step rollout is below 1% (versus above 5% for the dense linear baseline); (iii) the reaction-to-diffusion magnitude ratio on development_train lies in [0.1, 1.0]; (iv) cond(D) is below 100; (v) multi-step rollout MSE at horizons 10, 20, 40 is materially lower than the dense linear baseline.",
+    "failure_condition": "(i) one_step_mse on development_validation is worse than the dense linear baseline by more than 10%; (ii) relative mass drift per step is comparable to the dense linear baseline, indicating the hard conservation is not the binding constraint; (iii) ||R||/||D|| is below 0.01 (reaction negligible) or above 10 (reaction overwhelms diffusion); (iv) cond(D) is above 1000 (degenerate Cholesky factor, numerical or identifiability problem); (v) the learned 26-26 reactant/product split does not produce a better one-step fit than an alternative random 26-26 split evaluated as a control."
+  },
+  "implementation_plan": {
+    "modules": [
+      "preprocessing.split_assignment:k-means k=2 on first 3 PCA components of development_train latent states producing fixed reactant_index_set and product_index_set",
+      "model.linear_diffusion_layer:L_D (lower-triangular 26x26 trainable parameter), forms D = L_D @ L_D^T",
+      "model.reaction_mlp:2-layer MLP 26 -> 32 (Tanh) -> 26 with linear readout",
+      "model.mass_conserving_block_transfer:assembles M_C = [[-D, 0], [D, 0]] and forms A = I + M_C",
+      "model.reaction_block_transfer:computes g(z) = (-R(P z), +R(P z)) and sums to A z",
+      "model.one_step_predictor:z_next = A @ z + g(z)",
+      "training.train_loop:minimize one-step MSE on development_train with Adam, validate on development_validation, early stop on best validation loss",
+      "evaluation.mass_drift:compute M_t = sum(z_t) on rollout, report per-step relative drift and cumulative drift at horizon 20",
+      "evaluation.magnitude_diagnostics:compute mean ||R(z)|| and mean ||D z^R|| on development_train, report ratio; compute cond(D)",
+      "evaluation.baseline_dense_linear:fit a 52x52 dense linear operator on development_train as reference baseline",
+      "evaluation.rollout:iteratively apply z_{t+1} = A z_t + g(z_t) for horizons in [1,5,10,20,40,80] initialized from development_validation initial conditions, report MSE against ground truth at each horizon"
+    ],
+    "pseudocode": [
+      "# Step 1: fixed 26-26 split (preprocessing, runs once on development_train)",
+      "pca = PCA(n_components=3).fit(Z_train)              # Z_train: [N, 52]",
+      "proj = pca.transform(Z_train)                       # [N, 3]",
+      "km = KMeans(n_clusters=2, n_init=10, random_state=0).fit(proj)",
+      "label = km.labels_                                  # [N] in {0,1}",
+      "reactant_idx = np.where(label == 0)[0][:26]         # take first 26 of cluster 0",
+      "if len(reactant_idx) < 26:",
+      "    reactant_idx = np.concatenate([reactant_idx, np.where(label == 1)[0][:26-len(reactant_idx)]])",
+      "product_idx = np.setdiff1d(np.arange(52), reactant_idx)",
+      "assert len(reactant_idx) == 26 and len(product_idx) == 26",
+      "# Step 2: define model",
+      "def init_model(seed):",
+      "    rng = np.random.default_rng(seed)",
+      "    L_D = np.tril(rng.standard_normal((26, 26)) * 0.1)   # 26x26 lower-triangular",
+      "    W1 = rng.standard_normal((32, 26)) * 0.1",
+      "    b1 = np.zeros(32)",
+      "    W2 = rng.standard_normal((26, 32)) * 0.1",
+      "    b2 = np.zeros(26)",
+      "    return L_D, W1, b1, W2, b2",
+      "def assemble_A(L_D):",
+      "    D = L_D @ L_D.T                                       # 26x26 symmetric PSD",
+      "    M_C = np.zeros((52, 52))",
+      "    M_C[:26, :26] = -D",
+      "    M_C[26:, :26] = +D",
+      "    return np.eye(52) + M_C",
+      "def reaction(z_R, W1, b1, W2, b2):",
+      "    h = np.tanh(W1 @ z_R + b1)",
+      "    return W2 @ h + b2",
+      "def predict_one_step(z, L_D, W1, b1, W2, b2, R_idx, P_idx):",
+      "    A = assemble_A(L_D)",
+      "    z_R = z[R_idx]",
+      "    z_P = z[P_idx]",
+      "    Az = A @ z",
+      "    R_zR = reaction(z_R, W1, b1, W2, b2)",
+      "    g = np.zeros(52)",
+      "    g[R_idx] = -R_zR",
+      "    g[P_idx] = +R_zR",
+      "    return Az + g",
+      "# Step 3: train",
+      "for epoch in range(max_epochs):",
+      "    for batch in development_train:",
+      "        z_t, z_next_true = batch",
+      "        z_pred = predict_one_step(z_t, params...)",
+      "        loss = mean((z_pred - z_next_true)**2)",
+      "        loss.backward(); optimizer.step()",
+      "    if one_step_mse(development_validation) improved: save checkpoint",
+      "    if no improvement for 30 epochs: early stop",
+      "# Step 4: evaluate",
+      "one_step_mse_val = mean((predict_one_step(z_v) - z_v_next)**2) over development_validation",
+      "# rollout 20 steps and track mass",
+      "z = z_v_initial",
+      "mass_drift = []",
+      "for t in range(20):",
+      "    z = predict_one_step(z, params...)",
+      "    mass_drift.append(abs(sum(z) - sum(z_v_initial)) / abs(sum(z_v_initial)))",
+      "relative_drift_per_step = mean(mass_drift) / 20",
+      "# magnitude diagnostics",
+      "ratio = mean(||R(z_R)||) / mean(||D z_R||) on development_train",
+      "cond_D = np.linalg.cond(D)",
+      "# baseline comparison",
+      "baseline_A = ridge_fit_linear(Z_train, Z_train_next)   # 52x52 dense",
+      "baseline_one_step_mse = mean((baseline_A @ z_v - z_v_next)**2)"
+    ]
+  },
+  "generated_candidate_id": "H3",
+  "hypothesis_id": "H3",
+  "experiment": {
+    "type": "predictive_model",
+    "analysis_type": "None"
+  },
+  "candidate_type": "predictive_model",
+  "execution_mode": "model_runner",
+  "implementability": {
+    "current_pipeline_compatible": true,
+    "missing_inputs": [],
+    "required_history": 0,
+    "required_representation": "POD_latent",
+    "required_latent_dimension": 52,
+    "dynamics_type": "residual_operator",
+    "supported_dynamics": [
+      "global_linear",
+      "linear_operator",
+      "quadratic_bilinear",
+      "residual_operator",
+      "shrinkage_linear_operator",
+      "state_dependent_operator"
+    ],
+    "experiment_type": "predictive_model",
+    "analysis_type": "none",
+    "supported_experiment_types": [
+      "diagnostic_analysis",
+      "predictive_model"
+    ],
+    "supported_analyses": [
+      "operator_decomposition"
+    ]
+  }
+}

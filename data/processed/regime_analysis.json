@@ -1,0 +1,60 @@
+{
+  "latent_dimension": 52,
+  "num_development_snapshots": 400,
+  "num_dynamics_training_snapshots": 320,
+  "num_validation_snapshots": 80,
+  "num_windows": 5,
+  "window_size": 63,
+  "global_spectral_radius": 1.0003697660264599,
+  "mean_pairwise_operator_distance": 0.6007268207730142,
+  "median_pairwise_operator_distance": 0.6513636772381274,
+  "max_pairwise_operator_distance": 0.7077870257777004,
+  "regime_signal": "strong",
+  "windows": [
+    {
+      "window": 0,
+      "start_snapshot": 0,
+      "end_snapshot": 63,
+      "num_pairs": 63,
+      "relative_fit_error": 0.002507763253731667,
+      "spectral_radius": 1.2471869965087081,
+      "distance_to_global": 0.6461532414496296
+    },
+    {
+      "window": 1,
+      "start_snapshot": 63,
+      "end_snapshot": 126,
+      "num_pairs": 63,
+      "relative_fit_error": 0.003700706586927297,
+      "spectral_radius": 1.0039079823337251,
+      "distance_to_global": 0.5913832720455495
+    },
+    {
+      "window": 2,
+      "start_snapshot": 126,
+      "end_snapshot": 189,
+      "num_pairs": 63,
+      "relative_fit_error": 0.0014158820563864186,
+      "spectral_radius": 1.0002155692272516,
+      "distance_to_global": 0.5397310619743545
+    },
+    {
+      "window": 3,
+      "start_snapshot": 189,
+      "end_snapshot": 252,
+      "num_pairs": 63,
+      "relative_fit_error": 0.0015114291833162711,
+      "spectral_radius": 1.0000452977767134,
+      "distance_to_global": 0.6028577504508644
+    },
+    {
+      "window": 4,
+      "start_snapshot": 252,
+      "end_snapshot": 319,
+      "num_pairs": 67,
+      "relative_fit_error": 0.0012799293331323758,
+      "spectral_radius": 1.0002705181197007,
+      "distance_to_global": 0.609311075519602
+    }
+  ]
+}

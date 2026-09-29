@@ -1,0 +1,45 @@
+{
+  "status": "success",
+  "candidate_id": "H3",
+  "hypothesis_id": "H3",
+  "name": "Mass-conserving diffusion-reaction latent operator with explicit 26-26 reactant/product block split",
+  "hypothesis_source": "research_agent",
+  "hypothesis_file": "D:\\Projects\\flowrom-agent\\algorithms\\discovered\\hypothesis_used.json",
+  "contract_path": "D:\\Projects\\flowrom-agent\\algorithms\\discovered\\algorithm_spec.json",
+  "warnings": [],
+  "implementability": {
+    "current_pipeline_compatible": true,
+    "missing_inputs": [],
+    "required_history": 0,
+    "required_representation": "POD_latent",
+    "required_latent_dimension": 52,
+    "dynamics_type": "residual_operator",
+    "supported_dynamics": [
+      "global_linear",
+      "linear_operator",
+      "quadratic_bilinear",
+      "residual_operator",
+      "shrinkage_linear_operator",
+      "state_dependent_operator"
+    ],
+    "experiment_type": "predictive_model",
+    "analysis_type": "none",
+    "supported_experiment_types": [
+      "diagnostic_analysis",
+      "predictive_model"
+    ],
+    "supported_analyses": [
+      "operator_decomposition"
+    ]
+  },
+  "data_policy": {
+    "allowed_split": [
+      "development_train",
+      "development_validation"
+    ],
+    "forbidden_split": [
+      "final_test"
+    ],
+    "final_test_access": false
+  }
+}

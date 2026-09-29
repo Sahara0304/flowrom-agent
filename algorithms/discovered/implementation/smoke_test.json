@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "latent_shape": [
+    400,
+    52
+  ],
+  "latent_dimension": 52,
+  "train_snapshots": 320,
+  "one_step_shape": [
+    52
+  ],
+  "rollout_shape": [
+    11,
+    52
+  ],
+  "max_abs_rollout": 15.736736808588965
+}

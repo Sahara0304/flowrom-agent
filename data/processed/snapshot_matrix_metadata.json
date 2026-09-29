@@ -1,0 +1,19 @@
+{
+  "field_name": "GalerkinProjection",
+  "location": "point",
+  "mode": "magnitude",
+  "components": null,
+  "num_total_snapshots": 800,
+  "num_development_snapshots": 400,
+  "development_ratio": 0.5,
+  "snapshot_index_start": 1,
+  "snapshot_index_end": 400,
+  "matrix_shape": [
+    1949,
+    400
+  ],
+  "matrix_definition": "X[:, j] = x_j",
+  "mean_centered": true,
+  "matrix_path": "data\\processed\\snapshot_matrix_development.npy",
+  "mean_path": "data\\processed\\snapshot_mean.npy"
+}
