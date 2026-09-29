@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "representation": {
+    "type": "POD_latent",
+    "latent_dimension": 52,
+    "source_field": "magnitude",
+    "source_vector_components_available": false
+  },
+  "available_inputs": [
+    "latent_state",
+    "latent_history"
+  ],
+  "unavailable_inputs": [
+    "pressure",
+    "velocity_components",
+    "divergence",
+    "curl",
+    "boundary_conditions",
+    "exogenous_parameters",
+    "external_control_inputs"
+  ],
+  "supported_dynamics": [
+    "linear_operator",
+    "residual_operator",
+    "global_linear",
+    "shrinkage_linear_operator",
+    "state_dependent_operator",
+    "quadratic_bilinear"
+  ],
+  "runner": {
+    "candidate_interface": "first_order_state",
+    "explicit_history_input": false,
+    "latent_dimension": 52
+  },
+  "data_policy": {
+    "allowed_splits": [
+      "development_train",
+      "development_validation"
+    ],
+    "forbidden_splits": [
+      "final_test"
+    ],
+    "final_test_access": false
+  },
+  "supported_experiment_types": [
+    "predictive_model",
+    "diagnostic_analysis"
+  ],
+  "supported_analyses": [
+    "operator_decomposition"
+  ],
+  "analysis_runner": {
+    "supports_latent_trajectory": true,
+    "supports_development_train_validation_only": true,
+    "supports_final_test": false
+  }
+}

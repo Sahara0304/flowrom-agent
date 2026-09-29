@@ -1,0 +1,371 @@
+<think>Let me analyze what's happening here:
+
+1. We have a POD_latent representation with 52 dimensions, source field is "magnitude" (so we have magnitude field, not velocity components).
+2. Available inputs: latent_state, latent_history
+3. Available dynamics: linear_operator, autoregressive, delay_coordinate, residual_operator
+4. No final_test access, only development_train and development_validation
+5. Previous cycles failed due to:
+   - BOOTSTRAP_H1: Inconclusive (output schema issues)
+   - C001_H01, H02, H03: All failed due to AlgorithmAgent.run() signature mismatch (missing research_dir and output_dir args)
+   - C002_H01, H02: Failed smoke test due to latent_dim not matching approved contract
+   - C002_H03: Failed contract validation due to detected access to final-test data
+
+So the key issue is that NONE of the previous hypotheses have been scientifically evaluated. The failures were infrastructural, not scientific. This means the mechanisms themselves haven't been falsified yet.
+
+The research strategy should:
+1. Focus on mechanisms that can be executed with current capability profile
+2. Avoid unsupported mechanisms (divergence-free constraint, symplectic, exogenous parameter conditioning)
+3. Generate genuinely different hypotheses from what's been proposed
+
+Looking at supported dynamics:
+- linear_operator
+- autoregressive
+- delay_coordinate
+- residual_operator
+
+And unavailable inputs that would have been needed for some prior hypotheses:
+- pressure, velocity_components, divergence, curl, boundary_conditions, exogenous_parameters
+
+Previous hypotheses tried:
+- C001_H01: Non-Markovian delay-coordinate (uses delay_coordinate - supported!)
+- C001_H02: Divergence-free latent coordinates (uses divergence_free - NOT supported)
+- C001_H03: Multi-scale operator decomposition (could use supported dynamics)
+- C002_H01: Symplectic (NOT supported without pipeline change)
+- C002_H02: Exogenous-parameter conditioning (NOT supported)
+- C002_H03: Sparse symbolic with closure residual (could use residual_operator - supported)
+
+So I should focus on mechanisms that:
+1. Use only supported dynamics (linear_operator, autoregressive, delay_coordinate, residual_operator)
+2. Don't require unavailable inputs
+3. Are genuinely different from each other
+
+Let me think of three genuinely different hypotheses that are executable:
+
+Hypothesis 1: **Bayesian / Probabilistic Koopman operator** - Instead of a deterministic linear operator, use a probabilistic model over latent operators with uncertainty quantification. Different from delay-coordinate because it's stochastic.
+
+Hypothesis 2: **Sparse linear operator with manifold-aware regularization** - Instead of dense linear dynamics, enforce sparsity and low-rank structure that matches the actual POD decomposition (which is by definition low-rank). Different from previous because it explicitly uses the POD structure.
+
+Hypothesis 3: **Residual operator with temporal frequency decomposition** - Use residual_operator dynamics but split residuals by frequency bands (since POD naturally separates modes by frequency content). Different from C001_H03's slow-manifold splitting because it's frequency-domain, not multi-scale temporal.
+
+Wait, let me reconsider. The POD latent representation already gives us a linear-like coordinate system (POD modes are linear, but the dynamics in those coordinates are nonlinear). The questions are:
+- What kind of operator best captures the dynamics in this 52D space?
+- Can we add structure to make the operator more robust?
+
+Hypothesis 1: **Probabilistic Bayesian Linear Operator with Adaptive Eigenvalue Regularization**
+- Treat the latent linear operator A as a posterior distribution rather than point estimate
+- Use uncertainty to guide regularization adaptively
+- Mathematical form: A ~ N(μ, Σ), with updates based on prediction residuals
+- This is genuinely different because previous attempts used deterministic operators
+
+Hypothesis 2: **Modal-structure-aware sparse linear operator**
+- The POD basis already has a hierarchical structure (modes 1-N are dominant)
+- Enforce a banded/sparse structure in A that respects modal energy hierarchy
+- Mathematical form: A_{ij} = 0 unless within k-band of diagonal
+- Different from previous attempts because it explicitly leverages POD structure
+
+Hypothesis 3: **Nonlinear residual correction on top of frozen POD-projected linear dynamics**
+- Use residual_operator to learn nonlinear corrections to a baseline linear projection
+- Mathematical form: z_{t+1} = A z_t + g(z_t) where g is residual
+- The key novelty: g only operates in low-energy subspace to preserve POD's interpretability
+- Different from C001_H03 because it doesn't split timescales but energy scales
+
+Let me refine these and make sure they're executable and genuinely different.
+
+Actually, all of cycle 2's hypotheses (C002_H01, H02, H03) failed for infrastructural reasons, NOT scientific reasons. So the mechanisms in those hypotheses could still be scientifically valid. However:
+- C002_H01 (symplectic) - requires pipeline change
+- C002_H02 (exogenous-parameter conditioning) - exogenous params unavailable
+- C002_H03 (sparse symbolic) - works with residual_operator, but failed for different reasons
+
+So we should:
+1. Focus on mechanisms that are executably supported
+2. Be genuinely different from prior mechanisms
+3. Include falsification criteria that are scientifically meaningful (not just "did it run")
+
+Let me design three new hypotheses:
+
+**Hypothesis 1 (C003_H01): Bayesian linear operator with principled uncertainty propagation**
+- Instead of point-estimate A, use Bayesian posterior over A
+- Use uncertainty to identify which directions of state space are poorly captured
+- Mathematical form: A ~ posterior, z_{t+1} | z_t ~ N(A z_t, Σ_pred)
+- Distinguishing prediction: prediction intervals scale with eigenvalues of posterior covariance, and regions of state space with high uncertainty correlate with high prediction error
+
+**Hypothesis 2 (C003_H02): Energy-cascading hierarchical residual operator (cascade correction)**
+- Multi-stage: first a global linear operator, then a low-rank residual, then a fine-grained residual
+- This is different from C001_H03 (slow manifold/fast fluctuation - timescale split) because it's energy hierarchy (POD mode rank split)
+- Mathematical form: z_{t+1} = A_0 z_t + A_1 z_t + A_2 z_t with each A_k operating on progressively finer POD modes
+- Distinguishing prediction: most of the prediction error should be corrected by the first 1-3 residual stages, with diminishing error reduction thereafter
+
+**Hypothesis 3 (C003_H03): Delay-coordinate augmented autoregressive operator with optimal embedding lag selection**
+- Use Takens-style delay embedding with scientifically principled lag selection (mutual information minimum or autocorrelation zero-crossing)
+- Mathematical form: [z_t, z_{t-τ}, z_{t-2τ}, ..., z_{t-(d-1)τ}] -> z_{t+1}
+- This is genuinely different from C001_H01 (which was simply delay-coordinate without principled selection)
+- Distinguishing prediction: optimal τ chosen by mutual information minimizer will produce lower one-step error than arbitrary τ
+
+Wait, all previous attempts failed for infrastructural reasons, not scientific ones. So in principle, I could revisit any of the prior mechanisms with better infrastructure. But the instruction says "Avoid repeating already falsified mechanisms by simple parameter changes."
+
+Since none were scientifically falsified, none are truly "falsified." However, the prior hypotheses had mechanisms that are not supported by current pipeline. So I should pick mechanisms that:
+1. Use only supported dynamics
+2. Are genuinely different in scientific mechanism
+3. Are unlikely to repeat the same infrastructure failure modes
+
+Let me think about what went wrong infrastructurally:
+- AlgorithmAgent.run() missing args - this is a contract mismatch
+- latent_dim doesn't match - this is a contract mismatch
+- final-test access detected - this is a data policy violation
+
+The hypothesis should specify the expected interface clearly so the implementation can satisfy the contract. The key insight: the latent_dim is 52 (from capability profile). Any hypothesis must work with latent_dim=52.
+
+Let me draft three genuinely different, supported, executable hypotheses:
+
+**C003_H01: Bayesian posterior Koopman with eigenvalue shrinkage prior**
+- Treat latent dynamics as Bayesian linear regression with shrinkage prior
+- Different from BOOTSTRAP_H1 (regime-dependent linear operator) by adding principled regularization
+- Distinguishing prediction: eigenvalue spectrum of posterior mean A should be stable across time windows; uncertainty bounds should correlate with prediction errors
+
+**C003_H02: Sparse low-rank banded linear operator respecting POD energy hierarchy**
+- The linear operator A is constrained to be banded and sparse, exploiting that POD modes have decreasing energy
+- Mathematical form: A_{ij} = 0 unless j-i ∈ [-k, k] and |i-j| small; with low-rank spectral regularization
+- Distinguishing prediction: the banded/sparse structure should improve long-horizon prediction by preventing spurious cross-mode coupling; eigenvalue spectrum should decay smoothly
+
+**C003_H03: Cascade-of-scales residual operator with shared structure across scales**
+- Residual operator g(z_t) decomposed as sum of g_1(z_t) + g_2(z_t) + g_3(z_t) operating on progressively finer energy bands
+- Mathematical form: z_{t+1} = A z_t + sum_k g_k(z_t) where g_k uses only the top-(2^{k+1}) POD modes
+- Distinguishing prediction: cumulative error correction should follow a power law across cascade levels
+
+Actually, I realize that #3 overlaps conceptually with #2. Let me make them more distinct.
+
+Let me restart with three truly distinct mechanisms:
+
+**C003_H01: Bayesian posterior Koopman with eigenvalue shrinkage**
+- Probabilistic latent linear operator
+- Different from any prior: explicitly Bayesian
+
+**C003_H02: Delay-coordinate linear operator with mutual-information-optimal lag**
+- Takens delay embedding, but with principled lag selection via mutual information
+- Different from C001_H01 (which was a delay-coordinate without principled lag selection and failed for infra reasons)
+- This revisits the mechanism but adds the scientifically novel component (principled lag selection)
+
+**C003_H03: Stochastic residual operator with non-Gaussian likelihood**
+- Use residual_operator but with heavy-tailed (Laplace/Student-t) likelihood to be robust to rare large deviations
+- Different from any prior: explicitly robust statistics approach
+
+Hmm, but the instruction says "Avoid repeating already falsified mechanisms by simple parameter changes." C001_H01 was delay-coordinate; the mechanism is the same family. But I could argue that the scientific novelty is the principled lag selection, not the delay-coordinate mechanism itself.
+
+Actually, I think the best approach is to focus on three mechanisms that are:
+1. Executable with current capability (linear_operator, autoregressive, delay_coordinate, residual_operator)
+2. Scientifically novel compared to prior
+3. Designed to avoid the infrastructure failures
+
+Let me settle on:
+
+**C003_H01: Bayesian latent linear operator with hierarchical Gaussian priors**
+- Mechanism: Treat A as a posterior distribution, with hierarchical priors that regularize per-mode (per-eigenvalue) magnitudes
+- Math: A ~ MN(M, Σ_A, Σ_Ω); prior p(A) = product over eigenvalues λ_i of Laplace(λ_i | 0, b)
+- Novelty: probabilistic operator with shrinkage that respects the POD mode hierarchy
+- Falsification: predictive log-likelihood worse than point-estimate baseline by > threshold
+
+**C003_H02: Linear operator with scientifically informed sparsity (energy-band structure)**
+- Mechanism: Constrain A to be approximately banded respecting energy decay of POD modes
+- Math: A_{ij} = 0 when min(i,j) > K or |i-j| > band_width; minimize ||A - A_dense||
+- Novelty: operator structure that respects POD physics rather than arbitrary dense linear
+- Falsification: banded A has worse one-step prediction than dense A on validation by margin > ε
+
+**C003_H03: Residual correction restricted to the low-energy latent subspace**
+- Mechanism: Linear A captures dominant dynamics; nonlinear residual g(z) only operates on low-energy modes (modes > some K)
+- Math: z_{t+1} = A z_t + P_low (g(z_t)) where P_low projects to modes K+1 to 52
+- Novelty: separates "what POD already explains well" from "what needs nonlinear correction" along energy axis
+- Falsification: projecting residual to low-energy subspace gives no advantage over full-state residual
+
+These three are:
+1. All executable (use only latent_state, latent_history; use supported dynamics)
+2. All genuinely different in scientific mechanism
+3. All avoid the previous infrastructure failure modes
+
+Now let me write the full output.
+
+Let me think about the research_strategy field. Since none of the prior hypotheses have been scientifically evaluated, we are still in exploration phase. The strategy should be parallel exploration to make scientific progress, but we need to design the experiments such that they don't fail for infrastructural reasons.
+
+The key constraint: ALL cycle 1 and cycle 2 hypotheses failed due to infrastructure, not science. We need to ensure:
+1. Hypothesis contract explicitly works with latent_dim=52
+2. Use only supported dynamics
+3. Use only development_train / development_validation splits
+4. AlgorithmAgent.run() must be called with research_dir and output_dir args (this is an infrastructure issue but I should hint at it)
+
+Actually, the "minimum_experiment" should describe the experiment scientifically. The agent that's implementing this should know the contract.
+
+Let me draft the full JSON:
+
+```json
+{
+  "research_strategy": {
+    "mode": "parallel_exploration",
+    "reason": "No scientific signal yet: cycles 0-2 produced zero evaluable claims (BOOTSTRAP_H1 schema-incomparable, C001_*/C002_* all execution failures: missing run() args, latent_dim contract mismatch, final-test access detection). All three cycle-3 hypotheses are designed to be executable under the current capability profile (latent_dim=52, latent_state+latent_history inputs only, supported dynamics linear_operator/autoregressive/delay_coordinate/residual_operator, development-only splits) so that at least one yields a falsifiable scientific verdict this cycle. The three mechanisms are deliberately diverse — Bayesian probabilistic operator, structurally-constrained sparse operator, and energy-decomposed residual correction — to enable parallel falsification rather than sequential narrowing."
+  },
+  "unresolved_questions": [
+    "Can the cycle-1/cycle-2 mechanisms become evaluable once infrastructure issues are fixed, or were they the wrong scientific bets as well?",
+    "Does the latent linear operator from POD modes actually admit a meaningful probabilistic interpretation, or is the posterior collapse a risk?",
+    "Is the energy hierarchy of POD modes (low-index = high energy) a real exploitable structure for the operator, or does the reduction already mix modes?",
+    "What is the smallest residual operator size that meaningfully improves a deterministic linear baseline?",
+    "Does prediction error arise primarily from temporal non-Markovianity, from nonlinearity, or from both, and can this be diagnosed in latent space alone?"
+  ],
+  "hypotheses": [
+    {
+      "id": "C003_H01",
+      "name": "Bayesian hierarchical-shrinkage latent linear operator",
+      "scientific_question": "Does a probabilistic (Bayesian) treatment of the latent linear operator — with hierarchical shrinkage priors on per-eigenvalue magnitudes — produce better calibrated long-horizon predictive distributions than a deterministic least-squares operator fit on the same latent representation?",
+      "mechanism": "Replace the point-estimate latent linear operator A (used in BOOTSTRAP_H1 baseline) with a posterior over A. Use hierarchical Laplace priors on per-mode eigenvalue magnitudes so high-energy POD directions can be modeled aggressively while low-energy directions are regularized toward the prior. Propagate posterior predictive variance alongside the mean when scoring, so evaluation can use log-likelihood and CRPS rather than only point MSE.",
+      "mathematical_form": "z_{t+1} = A z_t + ε, A ∈ R^{52x52}, prior p(A) = product_i Laplace(λ_i(A) | 0, b_i), b_i decreasing with POD mode energy. Posterior p(A | data) approximated by Laplace/VI. Predictive: p(z_{t+1} | z_t, data) = ∫ N(z_{t+1}; A z_t, σ² I) p(A | data) dA. Score: log predictive density and continuous ranked probability score (CRPS).",
+      "motivation": "POD-based latent spaces are well known to have heavy-tailed eigenvalue spectra and modest effective rank. A point-estimate A overfits low-energy directions because the data poorly constrains them; a hierarchical Bayesian operator quantifies this uncertainty and shrinks unreliable directions. This is the natural scientific upgrade of the deterministic linear-operator baseline that BOOTSTRAP_H1 used and that produced an inconclusive (not comparable) result.",
+      "explanation_of_previous_failure": "BOOTSTRAP_H1 used a deterministic regime-dependent operator family and produced a verdict of 'inconclusive' solely because its output schema was not comparable across runs — a pure measurement issue, not a scientific failure of the linear-operator idea. C002_H01 (symplectic), C002_H02 (exogenous-parameter-conditioned Koopman), and C002_H02-style attempts were the right kind of structural prior but required either unavailable inputs or pipeline changes. This hypothesis keeps the same linear-operator family but adds a probabilistic wrapper that needs only latent_state/latent_history.",
+      "distinguishing_prediction": "If the probabilistic treatment is correct, (a) posterior predictive log-likelihood on development_validation should exceed that of a deterministic ridge-regression A by a positive margin that grows with horizon; (b) standardized one-step residuals should be approximately Gaussian; (c) posterior eigenvalue uncertainties should be systematically larger for low-energy POD modes than for high-energy modes.",
+      "minimum_experiment": "Train the Bayesian operator on development_train with K=3 posterior hyperparameter settings (b_i decay rates). Evaluate on development_validation: one-step log predictive density, 20-step rolling CRPS, eigenvalue posterior marginal std per mode. Compare to deterministic ridge-regression baseline. Use latent_dim=52 explicitly; pass research_dir and output_dir to AlgorithmAgent.run() to avoid the C001_* failure mode. Falsification criterion: if no (b_i setting) yields log predictive density significantly above the deterministic baseline AND eigenvalue posterior stds are not stratified by mode energy, the hierarchical-shrinkage mechanism is rejected.",
+      "expected_observation_if_true": "Per-mode eigenvalue posterior std decreases monotonically with POD mode energy; log predictive density > point-estimate by ≥5% at 20-step horizon; predictive intervals cover ~95% of held-out transitions at the nominal level.",
+      "expected_observation_if_false": "Posterior stds are uniform across modes (priors are being ignored); log predictive density matches or underperforms deterministic baseline; predictive intervals are either too narrow (overconfident) or uniformly wide (no information gain).",
+      "risks": "Variational inference may collapse to a delta around the MLE, making the hypothesis indistinguishable from a deterministic baseline. Laplace approximation may be inaccurate for the heavy tail of low-energy modes. Mitigation: report both VI and Laplace approximations; check that posterior is not degenerate.",
+      "relation_to_existing_methods": "Generalizes BOOTSTRAP_H1's deterministic linear operator (regime-dependent family) by replacing point estimate with posterior; conceptually adjacent to probabilistic Koopman (e.g., const-mein-limit hybrid probabilistic DMD) but does not require exogenous parameters and is implemented purely in latent space.",
+      "novelty_status": "Novel in this project context: probabilistic latent operators have not been tested in any prior cycle. Methodologically, hierarchical-shrinkage priors on POD-mode-ordered eigenvalues are an unconventional choice not standard in the DMD/Koopman literature."
+    },
+    {
+      "id": "C003_H02",
+      "name": "POD-energy-band-structured sparse latent linear operator",
+      "scientific_question": "Does enforcing a banded/sparse structure on the latent linear operator A — with bandwidth and sparsity pattern chosen to respect the energy hierarchy of the underlying POD basis — improve long-horizon predictive skill on development_validation relative to a fully dense ridge-regression operator?",
+      "mechanism": "POD modes are ordered by decreasing energy; in many CFD latent reductions, dominant modes couple mostly among themselves, and low-energy modes couple to a small neighborhood of dominant modes. The hypothesis is that an A with a structure that respects this coupling — explicitly banded within the high-energy block and sparse-to-dense outside it — should generalize better than a dense ridge operator that has many free parameters and overfits low-energy cross-couplings.",
+      "mathematical_form": "Let z^{(1:K)} denote the top-K POD modes (high-energy) and z^{(K+1:52)} the tail. Decompose A = [[A_{HH}, A_{HL}], [A_{LH}, A_{LL}]] with: A_{HH} ∈ R^{K×K} dense; A_{HL} ∈ R^{K×(52-K)} banded of width w_H; A_{LH} ∈ R^{(52-K)×K} low-rank of rank r_L; A_{LL} ∈ R^{(52-K)×(52-K)} sparse (fraction f_L << 1 of entries). Total free parameters << dense ridge. Loss: minimize ||A z_t - z_{t+1}||² + λ ||A||_F² + μ_bandwidth ||bandmask||^2.",
+      "motivation": "The dense ridge operator used in BOOTSTRAP_H1 has ~52² = 2704 free parameters and is known to smear energy across poorly observed directions. Sparsity/banding conventions are well established in compressed sensing for dynamical operators but their POD-energy-respecting structure has not been tested here. If the structure is correct, this gives both better generalization and interpretable mode-coupling diagnostics.",
+      "explanation_of_previous_failure": "C001_H01 (delay-coordinate), C001_H03 (multi-scale slow-manifold/fast-fluctuation), and C002_H02 (regime-aware linear) all involved linear-operator variants but failed for infrastructural reasons, not scientific ones — the mechanisms were never tested. This hypothesis introduces a structural sparsity prior on the operator that none of those attempts considered; it is a fresh mechanism, not a re-parameterization.",
+      "distinguishing_prediction": "If the energy-band structure is correct, (a) the banded+sparse A will have lower 20-step validation MSE than a dense ridge baseline despite fewer parameters; (b) the learned coupling pattern will qualitatively match the energy hierarchy — strongest couplings within the top-K block, weaker cross-block, weakest within-tail; (c) residual analysis: most error should come from low-energy tail modes, not from systematic drift in the top-K modes.",
+      "minimum_experiment": "Train the structured operator on development_train with K ∈ {8, 16, 24}, bandwidth w_H ∈ {3, 5}, and sparsity f_L ∈ {0.1, 0.3, 0.5}. Compare to a dense ridge baseline with matched regularization. Evaluate: 1-step MSE, 20-step MSE, 100-step MSE, parameter count, eigenvalue spectrum of A. Falsification criterion: if no (K, w_H, f_L) setting beats dense ridge on 20-step validation MSE by > 5% AND learned coupling pattern shows no stratification by energy block, the POD-energy-band-structure mechanism is rejected.",
+      "expected_observation_if_true": "20-step MSE < dense-ridge MSE by ≥5%; eigenvalue spectrum of A has cleaner separation between dominant and suppressed modes; identified coupling pattern is interpretable as a coupling graph that is visually aligned with the energy hierarchy of POD.",
+      "expected_observation_if_false": "Banded+sparse A underperforms dense ridge at every tested bandwidth and sparsity; learned A is essentially dense and shows no energy-block stratification; eigenvalue spectrum is similar to dense ridge.",
+      "risks": "If the true dynamics couple high- and low-energy modes strongly (e.g., via nonlinearity), the banded/sparse constraint could be too restrictive. Mitigation: include a no-bandwidth (fully dense within each block) baseline as a control.",
+      "relation_to_existing_methods": "Standard sparse regression for system identification (e.g., SINDy) operates in physical state space and needs divergence/curl which are unavailable; this hypothesis operates purely on latent_state/mode and uses energy-respecting sparsity as a structurally informed regularizer. Conceptually closest to banded Koopman or block-sparse operator learning, but with the specific POD-energy structure.",
+      "novelty_status": "Novel in this project. The specific 'energy-band-respecting' structure of A — coupling within the high-energy block as dense, low-rank for tail-to-head, sparse within tail — has not been proposed in prior cycles nor, to my knowledge, in the standard Koopman-on-CFD literature."
+    },
+    {
+      "id": "C003_H03",
+      "name": "Energy-decomposed residual correction (linear core + low-energy nonlinear residual)",
+      "scientific_question": "Is prediction error in the 52D latent space primarily driven by nonlinearity concentrated in the low-energy POD tail (modes K+1 to 52), so that restricting a nonlinear residual correction g(z) to that tail strictly improves over either a fully linear operator or a full-state nonlinear residual?",
+      "mechanism": "POD's optimality in L2 means the top-K modes capture the bulk of reconstruction energy; their dynamics are approximately linear in many CFD latent reductions because they correspond to coherent structures. The tail modes capture small-scale, intermittent, often nonlinear dynamics. The hypothesis: a linear A on the full state captures the bulk of coherent dynamics; a small nonlinear g (e.g., low-rank MLP) restricted to the low-energy tail captures the residual. This decomposes linear/nonlinear contributions along the physically meaningful energy axis.",
+      "mathematical_form": "Split z = [z_H; z_T] where z_H ∈ R^K (top modes), z_T ∈ R^{52-K} (tail). Linear core: z_H^{t+1} = A_HH z_H^t + A_HL z_T^t; z_T^{t+1,lin} = A_LH z_H^t + A_LL z_T^t. Nonlinear residual: g: R^{52-K} → R^{52-K}, so z_T^{t+1} = z_T^{t+1,lin} + g(z_t). Total: z^{t+1} = z^{t+1,lin} + [0; g(z_t)]. The residual does NOT modify z_H, by hypothesis.",
+      "motivation": "C001_H03 attempted a multi-scale decomposition into 'slow manifold' and 'fast fluctuation', which is a timescale split; it failed for infrastructure reasons. This hypothesis is different in mechanism: it is an energy-axis decomposition, not a timescale one. It also has a clean falsifiable prediction — whether or not the residual needs to act on the high-energy block. If g restricted to the tail is sufficient, we have learned that the nonlinearity in this latent reduction is dominated by small-scale modes.",
+      "explanation_of_previous_failure": "C001_H03 (slow manifold + fast fluctuation) failed for the run() signature bug — its mechanism was never tested. This hypothesis uses residual_operator (in the supported list) but in a fundamentally different scientific configuration: the residual lives in a specific subspace (the low-energy tail) determined by the latent representation's own structure, rather than across all latent components organized by timescale.",
+      "distinguishing_prediction": "If the energy-decomposition mechanism is correct, (a) the residual g acting only on the tail will achieve ≥95% of the performance of a full-state residual at the same parameter count; (b) the residual on z_H, if added, will not improve metrics significantly; (c) the learned g will have measurable signal: ||g(z_T)||_mean > 0 and will correlate with the magnitude of z_T itself, indicating it is responding to genuine low-energy nonlinear structure.",
+      "minimum_experiment": "Train three variants on development_train: (i) full linear baseline A; (ii) A + full-state residual g_full; (iii) A + tail-only residual g_tail. Hold MLP width and depth constant across (ii) and (iii). Evaluate: 1-step MSE, 20-step MSE, reconstruction-of-z_H vs z_T separately. Falsification criterion: if g_tail < 0.9 × g_full on 20-step MSE for all tested K ∈ {12, 24, 36} AND adding g_full-equivalent residual on z_H improves MSE by > 10%, the energy-decomposition mechanism is rejected (nonlinearity is not confined to the tail).",
+      "expected_observation_if_true": "g_tail recovers ≥90% of g_full's improvement over the linear baseline; residual on z_H alone (a control) does not improve metrics; ||g(z_T)|| grows monotonically with ||z_T||, indicating g is a real nonlinear response.",
+      "expected_observation_if_false": "g_tail substantially underperforms g_full (energy-decomposition is too aggressive); the control residual on z_H improves metrics by ≥10%, indicating nonlinearity is broadly distributed across the energy axis; g output is noise-like and does not scale with z_T.",
+      "risks": "If the POD latent is not strictly energy-separable in its dynamics (modes mix strongly), the tail restriction may discard critical nonlinear content. The control experiment (g on z_H only) directly measures this risk.",
+      "relation_to_existing_methods": "Hybrid linear+nonlinear ROMs are common (e.g., linear Galerkin + neural correction), but the specific design choice of restricting the nonlinear correction to the low-energy POD tail — and the falsifiable prediction that the high-energy block needs no correction — has not been tested in prior cycles.",
+      "novelty_status": "Novel in this project. The 'residual lives only in the low-energy tail' design is a specific, falsifiable architectural choice that none of the prior hypotheses (C001_H03's slow-manifold/fast-fluctuation, C002_H03's symbolic-closure-residual) considered. The control experiment (residual on the high-energy block) is a built-in negative-result design."
+    }
+  ]
+}
+```
+
+Let me double-check each hypothesis against the capability profile:
+
+**C003_H01 (Bayesian hierarchical-shrinkage):**
+- Inputs: latent_state, latent_history ✓
+- Dynamics: linear_operator (within posterior) ✓
+- Splits: development_train / development_validation ✓
+- No unavailable inputs ✓
+
+**C003_H02 (POD-energy-band-structured sparse):**
+- Inputs: latent_state, latent_history ✓
+- Dynamics: linear_operator ✓
+- Splits: development_train / development_validation ✓
+- No unavailable inputs ✓
+
+**C003_H03 (Energy-decomposed residual correction):**
+- Inputs: latent_state, latent_history ✓
+- Dynamics: linear_operator + residual_operator ✓
+- Splits: development_train / development_validation ✓
+- No unavailable inputs ✓
+
+All three are executable and genuinely novel.
+
+One concern: C002_H03 was supposed to be a "sparse symbolic identification with learned closure residual" - this is similar in flavor to C003_H03. But C002_H03 failed for infrastructure (final-test access detected), and it was about symbolic identification with residual, not energy-decomposed residual. C003_H03 is genuinely different because:
+- C002_H03: tries to identify sparse symbolic terms
+- C003_H03: enforces that the residual lives in a specific subspace (low-energy tail)
+
+These are different scientific mechanisms.
+
+Let me also check the latency fields, particularly the explanation_of_previous_failure and ensure I'm being specific about each failure mode.
+
+Also, the previous C002_H03 failure had two issues: (1) detected final-test access in representation.normalization, (2) UnicodeEncodeError on a GBK console encoding the symbol '\u2212'. Both are infrastructural. I should mention these in the explanation or minimum_experiment to avoid them.
+
+Let me also ensure the math formulas are precise enough but readable.
+
+I think the JSON is comprehensive. Let me finalize it.
+
+One more check: the research_strategy says "parallel_exploration" with a mode similar to cycle 2's "parallel_exploration_with_mechanism_diversification". I'll keep it simple as "parallel_exploration" since the diversification is reflected in the three hypotheses.
+
+Final touches: let me make sure the falsification criteria are concrete and scientifically falsifiable (not just "did it run").
+
+I think this is ready. Let me output the JSON.</think>
+
+```json
+{
+  "research_strategy": {
+    "mode": "parallel_exploration",
+    "reason": "Cycles 0–2 produced zero evaluable scientific claims. BOOTSTRAP_H1 was 'inconclusive' only because its output schema was not comparable. C001_H01/H02/H03 and C002_H01/H02/H03 all failed infrastructurally (AlgorithmAgent.run() missing research_dir/output_dir args; latent_dim contract mismatch in smoke test; final-test access detected in representation.normalization; GBK UnicodeEncodeError on console). None of the underlying scientific mechanisms has been falsified. Cycle 3 therefore stays in parallel exploration, but every candidate is now designed to be executable under the current capability profile (latent_dim=52, inputs limited to latent_state and latent_history, supported dynamics only: linear_operator / autoregressive / delay_coordinate / residual_operator, development-only splits). The three mechanisms are genuinely distinct — probabilistic operator with hierarchical shrinkage, energy-respecting sparse/banded operator, and energy-decomposed linear+tail-residual hybrid — so at least one will yield a falsifiable verdict and the three together probe whether prediction error in this 52D latent space is best explained by uncertainty, by mode-coupling structure, or by energy-localized nonlinearity."
+  },
+  "unresolved_questions": [
+    "Can the cycle-1/cycle-2 mechanisms be re-evaluated once the AgentRunner signature and contract issues are fixed, or are they scientifically wrong as well?",
+    "In this 52D latent space, is the prediction error primarily epistemic (uncertainty about A), structural (wrong sparsity/coupling pattern), or nonlinear (genuine g(z) not captured by any linear A)?",
+    "Does the energy hierarchy of the underlying POD basis impose a real exploitable structure on the latent dynamics, or has the POD projection already mixed modes such that mode index no longer predicts coupling?",
+    "What is the smallest scientifically interpretable residual operator that meaningfully improves a deterministic linear baseline?",
+    "Is the Bayesian posterior over A well identified (does not collapse to the MLE), or does the deterministic ridge operator already absorb all the information?",
+    "Is nonlinearity in this latent reduction concentrated in the low-energy tail, or distributed across the full latent state?"
+  ],
+  "hypotheses": [
+    {
+      "id": "C003_H01",
+      "name": "Bayesian hierarchical-shrinkage latent linear operator",
+      "scientific_question": "Does replacing a deterministic least-squares latent linear operator A with a Bayesian posterior over A — using hierarchical shrinkage priors on per-POD-mode eigenvalue magnitudes — produce better calibrated long-horizon predictive distributions and a stratified (energy-aware) posterior uncertainty on the same latent representation?",
+      "mechanism": "Treat the latent transition z_{t+1} = A z_t + ε as a Bayesian linear regression. Instead of a single point-estimate A, place a hierarchical Laplace prior on each eigenvalue λ_i(A) with scale b_i that decreases with POD mode energy. Low-energy eigenvalues (poorly identified from data) are shrunk toward zero; high-energy eigenvalues are estimated aggressively. Propagate the full posterior predictive distribution N(A z_t, σ² I + z_t^T Σ_A z_t I) rather than only the mean, so scoring can use log predictive density and continuous ranked probability score (CRPS) instead of plain MSE.",
+      "mathematical_form": "Observation model: z_{t+1} = A z_t + ε, ε ~ N(0, σ² I), A ∈ R^{52×52}. Eigendecompose A = V Λ V^{-1}. Prior: p(Λ) = ∏_i Laplace(λ_i | 0, b_i), b_i = b_0 · exp(-α · i / 52), α ≥ 0. Posterior: p(A|Σ) approximated by Laplace/VI. Predictive: p(z_{t+1} | z_t, Σ) ≈ ∫ N(z_{t+1}; A z_t, σ² I) p(A|Σ) dA. Metrics: log predictive density, CRPS at horizons 1, 5, 20; per-mode posterior marginal std of λ_i.",
+      "motivation": "POD latent spaces typically have heavy-tailed eigenvalue spectra: a few high-energy modes dominate, and the long tail is poorly constrained by the data. A deterministic ridge A overfits the tail and gives overconfident predictions there. A hierarchical Bayesian operator quantifies this structurally and is the natural scientific upgrade of the deterministic linear-operator family that BOOTSTRAP_H1 used (and which produced only an inconclusive schema-mismatch verdict, not a scientific falsification).",
+      "explanation_of_previous_failure": "BOOTSTRAP_H1's deterministic regime-dependent operator finished without comparable metrics; that was a measurement problem, not a scientific refutation. C002_H01 (symplectic) and C002_H02 (exogenous-parameter-conditioned) tried richer operator priors but required unavailable inputs and/or a pipeline change. C003_H01 keeps the linear-operator family but adds a probabilistic wrapper that uses only latent_state and latent_history and requires no physical-field inputs — it should pass the data-policy validator that rejected C002_H03.",
+      "distinguishing_prediction": "If the hierarchical-shrinkage mechanism is correct: (a) per-mode posterior std of λ_i decreases monotonically with POD mode energy index i; (b) log predictive density on development_validation exceeds the deterministic ridge baseline, and the gap grows with horizon (because predictive variance properly reflects tail uncertainty); (c) the 95% predictive intervals cover ~95% of held-out transitions at the nominal level.",
+      "minimum_experiment": "Train on development_train with α ∈ {0, 2, 4} and b_0 ∈ {0.1, 1.0, 10.0}. Evaluate on development_validation: 1-step log predictive density, 20-step rolling CRPS, per-mode posterior std of λ_i, calibration curve of predictive intervals. Use latent_dim=52 explicitly in the contract; call AlgorithmAgent.run(research_dir=..., output_dir=...) to avoid the C001_* missing-args failure; restrict representation.normalization to development_train and development_validation to avoid the C002_H03 final-test-access detection. Falsification criterion: if no (α, b_0) setting produces log predictive density above the deterministic ridge baseline AND per-mode posterior std is not stratified by mode energy (i.e., the prior is being ignored), the hierarchical-shrinkage mechanism is rejected.",
+      "expected_observation_if_true": "Per-mode λ_i posterior std is a clearly decreasing function of mode index; log predictive density improves over deterministic ridge by ≥5% at the 20-step horizon; 95% predictive intervals are well-calibrated.",
+      "expected_observation_if_false": "Posterior std is approximately uniform across modes (priors are ignored); log predictive density matches or underperforms the deterministic baseline; predictive intervals are either over-narrow (posterior collapsed to MLE) or uniformly wide (no information gain).",
+      "risks": "Variational inference may collapse to the MLE, making the hypothesis indistinguishable from a deterministic baseline; Laplace approximation may be inaccurate for the heavy-tailed tail. Mitigation: report both VI and Laplace approximations, and check whether the posterior has collapsed.",
+      "relation_to_existing_methods": "Generalizes BOOTSTRAP_H1's deterministic linear operator family by replacing point estimate with a posterior. Conceptually adjacent to probabilistic DMD / probabilistic Koopman, but implemented purely in latent space and requires no exogenous parameters or physical fields — fitting the current capability profile.",
+      "novelty_status": "Novel in this project. Hierarchical shrinkage priors on eigenvalues indexed by POD mode energy is an unconventional combination not standard in DMD / probabilistic Koopman literature and has not been proposed in any prior cycle."
+    },
+    {
+      "id": "C003_H02",
+      "name": "POD-energy-band-structured sparse latent linear operator",
+      "scientific_question": "Does enforcing a banded/sparse structural prior on the latent linear operator A — with sparsity pattern and bandwidth chosen to respect the energy hierarchy of the underlying POD basis — improve long-horizon predictive skill on development_validation relative to a fully dense ridge-regression operator at matched regularization strength?",
+      "mechanism": "POD modes are ordered by decreasing reconstruction energy. In many CFD latent reductions, dominant modes couple mostly among themselves and to a small neighborhood of weaker modes; low-energy tail modes couple to a small set of head modes rather than to each other. The hypothesis: an A whose block structure reflects this coupling — dense within the high-energy block, low-rank for tail-to-head, sparse within the tail — should generalize better than a dense A with many free parameters that overfit low-energy cross-couplings. The structural prior is a compression of domain knowledge about POD's energy ordering into the operator's geometry.",
+      "mathematical_form": "Partition z = [z_H; z_T] with z_H ∈ R^K (top-K high-energy modes) and z_T ∈ R^{52-K} (tail). Decompose A = [[A_{HH}, A_{HL}], [A_{LH}, A_{LL}]]. Structure: A_{HH} ∈ R^{K×K} dense; A_{HL} ∈ R^{K×(52-K)} banded of bandwidth w_H; A_{LH} ∈ R^{(52-K)×K} low-rank of rank r_L; A_{LL} ∈ R^{(52-K)×(52-K)} sparse with fraction f_L of entries. Loss: minimize Σ_t ||A z_t − z_{t+1}||² + λ ||A||_F² + μ_bandwidth ||bandmask||². Total free parameters ≪ dense ridge (52² ≈ 2704).",
+      "motivation": "The dense ridge operator used in BOOTSTRAP_H1 is known to smear energy across poorly observed directions and overfit cross-couplings that are statistical artifacts. Sparsity and low-rank constraints are well established in compressed-sensing system identification, but the specific 'POD-energy-respecting' structure (dense head–head, banded head–tail, low-rank tail–head, sparse tail–tail) has not been tested here. If the structure is correct, this gives both better generalization and interpretable mode-coupling diagnostics that the dense baseline cannot provide.",
+      "explanation_of_previous_failure": "C001_H01 (delay-coordinate), C001_H03 (slow-manifold/fast-fluctuation), and C002_H02 (regime-aware Koopman) all involved variants of linear operators but failed infrastructurally (run() signature, smoke-test contract). The mechanisms were never tested. C003_H02 introduces a structural sparsity prior that none of those attempts considered; it is a fresh scientific mechanism, not a re-parameterization. It also avoids the C002_H03 failure mode by using only latent_state/latent_history and by keeping normalization on development-only splits.",
+      "distinguishing_prediction": "If the energy-band structure is correct: (a) the structured A achieves lower 20-step validation MSE than a dense ridge baseline despite having strictly fewer free parameters; (b) the learned coupling pattern is qualitatively aligned with the energy hierarchy — strongest couplings within the top-K block, weaker cross-block, weakest within the tail; (c) most prediction error originates from the low-energy tail modes, not from systematic drift in the top-K modes (i.e., the linear core captures the dominant dynamics).",
+      "minimum_experiment": "Train on development_train with K ∈ {8, 16, 24}, bandwidth w_H ∈ {3, 5, full}, low-rank r_L ∈ {2, 4, 8}, tail sparsity f_L ∈ {0.1, 0.3, 0.5}. Compare against a dense ridge baseline with matched λ. Evaluate on development_validation: 1-step MSE, 20-step MSE, 100-step MSE; per-block (z_H, z_T) MSE separately; parameter count; eigenvalue spectrum of A; learned coupling-pattern visualization. Pass research_dir and output_dir to AlgorithmAgent.run() to avoid the C001_* missing-args failure; declare latent_dim=52 in the contract to avoid the C002_* smoke-test contract mismatch. Falsification criterion: if no (K, w_H, r_L, f_L) setting beats dense ridge on 20-step validation MSE by ≥5% AND the learned coupling pattern shows no qualitative stratification by energy block, the POD-energy-band-structure mechanism is rejected.",
+      "expected_observation_if_true": "20-step validation MSE < dense-ridge MSE by ≥5%; eigenvalue spectrum of A shows clean separation between dominant and suppressed modes; the coupling pattern looks like a small graph with edges concentrated in the top-K block.",
+      "expected_observation_if_false": "Structured A underperforms dense ridge at every tested setting; the learned A is essentially dense and shows no energy-block stratification; the eigenvalue spectrum is indistinguishable from dense ridge.",
+      "risks": "If the true dynamics couple high- and low-energy modes strongly (e.g., via nonlinearity), the banded/sparse constraint may be too restrictive. Mitigation: include a 'fully dense within each block, structured only across blocks' control, which removes the within-block sparsity but keeps the cross-block low-rank/banded structure.",
+      "relation_to_existing_methods": "Block-sparse Koopman and banded operator learning exist in the system-identification literature, but the specific POD-energy-respecting pattern (dense head–head, banded head–tail, low-rank tail–head, sparse tail–tail) and its falsifiable alignment with the energy hierarchy is novel within this project. SINDy-style sparse regression is related in spirit but requires physical-state variables (divergence/curl) that are unavailable here; this hypothesis works purely in latent space.",
+      "novelty_status": "Novel in this project. The 'POD-energy-band' structural prior on A has not been proposed in any prior cycle and, to my knowledge, is not standard in Koopman-on-CFD literature."
+    },
+    {
+      "id": "C003_H03",
+      "name": "Energy-decomposed linear core plus low-energy-tail residual correction",
+      "scientific_question": "Is prediction error in the 52D latent space driven primarily by nonlinearity concentrated in the low-energy POD tail (modes K+1 to 52), so that restricting a nonlinear residual correction g(z) to that tail strictly improves over both a fully linear operator and a full-state nonlinear residual at matched parameter count?",
+      "mechanism": "POD is L2-optimal, so the top-K modes carry most of the reconstruction energy; their dynamics are typically approximately linear because they correspond to coherent structures. The tail modes capture small-scale, intermittent, often nonlinear dynamics. The hypothesis decomposes the dynamics along the physically meaningful energy axis: a single linear A captures the full state; a small nonlinear residual g acts only on the tail and does not modify the high-energy block. This cleanly separates the linear and nonlinear contributions in a way that is falsifiable by a built-in control experiment (the same g applied to the high-energy block only).",
+      "mathematical_form": "Split z = [z_H; z_T] with z_H ∈ R^K, z_T ∈ R^{52-K}. Linear core: [z_H^{t+1}; z_T^{t+1,lin}] = A [z_H^t; z_T^t] with A ∈ R^{52×52}. Nonlinear residual: g_θ: R^{52} → R^{52-K}, so z_T^{t+1} = z_T^{t+1,lin} + g_θ(z_t) and z_H^{t+1} = z_H^{t+1,lin} (residual does NOT modify z_H). Total: z^{t+1} = A z_t + [0; g_θ(z_t)]. For the full-state control, replace [0; g_θ] with g_full(z_t) ∈ R^{52}; for the high-energy control, use g_H(z_t) ∈ R^K in the top block.",
+      "motivation": "Hybrid linear + nonlinear ROMs are common (linear Galerkin + neural correction), but the specific design choice of restricting the nonlinear correction to the low-energy tail — with the falsifiable prediction that the high-energy block needs no nonlinear correction — has not been tested. C001_H03 attempted a related idea (multi-scale slow manifold + fast fluctuation) but failed for the run() signature bug and was, in any case, a timescale-axis decomposition rather than an energy-axis one. C003_H03 is a fundamentally different mechanism, with a built-in negative-result arm.",
+      "explanation_of_previous_failure": "C001_H03 (slow manifold / fast fluctuation) failed at run() signature, mechanism untested. C002_H03 (sparse symbolic with closure residual) failed at the contract validator (final-test access in representation.normalization). C003_H03 keeps a residual_operator but locates it in a specific energy-defined subspace and includes a built-in control (residual on the high-energy block only) that directly tests the energy-axis hypothesis. Normalization and data access are restricted to development_train and development_validation to avoid the C002_H03 contract failure, and the run() signature is fixed.",
+      "distinguishing_prediction": "If the energy-decomposition mechanism is correct: (a) g_tail (acting only on z_T) achieves ≥90% of g_full's improvement over the linear baseline at matched parameter count; (b) adding the equivalent residual on the high-energy block g_H alone does not improve metrics significantly (<10% gain); (c) ||g(z_T)||_mean > 0 and scales monotonically with ||z_T||, indicating g is responding to real nonlinear content rather than producing noise.",
+      "minimum_experiment": "Train three variants on development_train with K ∈ {12, 24, 36}: (i) A only (linear baseline); (ii) A + full-state residual g_full (g_full: R^{52} → R^{52}); (iii) A + tail-only residual g_tail (g_tail: R^{52} → R^{52-K}); (iv) control: A + head-only residual g_H (g_H: R^{52} → R^K). Hold MLP width and depth constant across (ii), (iii), (iv). Evaluate on development_validation: 1-step MSE on z_H and z_T separately; 20-step MSE on z_H and z_T separately; ||g(z)|| mean and its correlation with ||z_T||; parameter count. Pass research_dir and output_dir to AlgorithmAgent.run(); declare latent_dim=52; restrict normalization to development_train and development_validation; avoid the special character that triggered the GBK UnicodeEncodeError in C002_H03. Falsification criterion: if g_tail achieves < 0.9 × g_full on 20-step MSE for all tested K AND adding g_H on the high-energy block improves 20-step MSE by ≥10%, the energy-decomposition mechanism is rejected (nonlinearity is broadly distributed, not tail-localized).",
+      "expected_observation_if_true": "g_tail recovers ≥90% of g_full's gain; g_H alone does not improve 20-step MSE; ||g(z_T)|| scales monotonically with ||z_T||, and the correlation is statistically significant; most residual improvement comes from the tail block, not the head block.",
+      "expected_observation_if_false": "g_tail substantially underperforms g_full (energy restriction is too aggressive); g_H improves MSE by ≥10%; ||g(z_T)|| is uncorrelated with ||z_T||, indicating g is producing noise rather than responding to real nonlinear structure.",
+      "risks": "If the POD latent is not strictly energy-separable in its dynamics (modes mix strongly), the tail restriction may discard critical nonlinear content. The control experiment g_H directly measures this risk; if g_H is informative, the hypothesis is wrong.",
+      "relation_to_existing_methods": "Hybrid linear + nonlinear ROMs are standard, but the specific design choice — residual lives only in the low-energy tail, with a built-in negative-result arm on the high-energy block — has not been tested in prior cycles. Closest in spirit to scale-aware neural correction but with a falsifiable energy-axis spatial structure rather than a generic split.",
+      "novelty_status": "Novel in this project. The 'residual restricted to the low-energy tail with a built-in high-energy control' design is a specific, falsifiable architectural choice that none of the prior hypotheses (C001_H03's slow-manifold/fast-fluctuation timescale split, C002_H03's symbolic-closure residual) considered. The control arm (g_H on the high-energy block) makes the falsification explicit and quantitative."
+    }
+  ]
+}
+```

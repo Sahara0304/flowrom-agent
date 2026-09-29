@@ -1,0 +1,84 @@
+{
+  "research_cycle": 7,
+  "generated_at": "2026-09-29T08:14:03.982703+00:00",
+  "strategy": {
+    "mode": "emergency_fallback",
+    "reason": "MiniMax request failed after 3 attempts: HTTPSConnectionPool(host='api.minimaxi.com', port=443): Read timed out. (read timeout=15.0)",
+    "llm_available": false,
+    "source": "fallback",
+    "literature_count": 0
+  },
+  "hypotheses": [
+    {
+      "id": "H_fallback_residual",
+      "name": "Weak structured residual around global latent dynamics",
+      "scientific_question": "Can a constrained residual capture repeatable deviations left by the global operator?",
+      "mechanism": "Shared global operator plus low-complexity state-conditioned residual.",
+      "mathematical_form": "z_next = A0 z_t + DeltaA(z_t) z_t",
+      "motivation": "The global linear baseline is much stronger than the fully regime-conditioned model.",
+      "explanation_of_previous_failure": "Independent local operators may have too much variance.",
+      "distinguishing_prediction": "A constrained residual should improve validation without materially hurting one-step accuracy.",
+      "minimum_experiment": [
+        "Fit A0 on development_train",
+        "fit residual on development_train",
+        "evaluate on development_validation"
+      ],
+      "expected_observation_if_true": "Small reproducible validation gain.",
+      "expected_observation_if_false": "No gain or degradation.",
+      "risks": [
+        "overfitting"
+      ],
+      "relation_to_existing_methods": "Related to residual operator learning; novelty requires verification.",
+      "novelty_status": "verification_incomplete",
+      "generation_mode": "emergency_fallback"
+    },
+    {
+      "id": "H_fallback_memory",
+      "name": "Higher-order latent memory",
+      "scientific_question": "Is the current latent state insufficient to summarize recent history?",
+      "mechanism": "Second-order latent autoregression.",
+      "mathematical_form": "z_next = A0 z_t + A1 z_{t-1}",
+      "motivation": "Good one-step global accuracy with accumulating rollout error leaves memory as a competing explanation.",
+      "explanation_of_previous_failure": "A first-order Markov latent model may be missing temporal information.",
+      "distinguishing_prediction": "Adding one lag should reduce multi-step error if memory matters.",
+      "minimum_experiment": [
+        "Fit A0,A1 on development_train",
+        "evaluate one-step and rollout on development_validation"
+      ],
+      "expected_observation_if_true": "Lower long-horizon validation error.",
+      "expected_observation_if_false": "No improvement over global linear.",
+      "risks": [
+        "parameter growth",
+        "instability"
+      ],
+      "relation_to_existing_methods": "Related to autoregressive ROMs; novelty requires verification.",
+      "novelty_status": "verification_incomplete",
+      "generation_mode": "emergency_fallback"
+    },
+    {
+      "id": "H_fallback_lift",
+      "name": "Low-dimensional nonlinear lifting",
+      "scientific_question": "Does a compact nonlinear feature space linearize the latent evolution better?",
+      "mechanism": "Feature lifting followed by linear dynamics.",
+      "mathematical_form": "phi(z_next) approximately equals K phi(z_t)",
+      "motivation": "The global linear law may capture the dominant component while leaving structured nonlinear residuals.",
+      "explanation_of_previous_failure": "Hard regime switching is only one possible nonlinear mechanism.",
+      "distinguishing_prediction": "A compact lift should improve rollout at modest complexity.",
+      "minimum_experiment": [
+        "construct train-only feature lift",
+        "fit K on development_train",
+        "evaluate on development_validation"
+      ],
+      "expected_observation_if_true": "Improved rollout accuracy.",
+      "expected_observation_if_false": "No gain or poorer generalization.",
+      "risks": [
+        "feature explosion",
+        "overfitting"
+      ],
+      "relation_to_existing_methods": "Related to Koopman/lifting methods; novelty requires verification.",
+      "novelty_status": "verification_incomplete",
+      "generation_mode": "emergency_fallback"
+    }
+  ],
+  "literature": []
+}

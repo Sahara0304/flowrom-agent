@@ -1,0 +1,48 @@
+{
+  "status": "recovered",
+  "evidence": [],
+  "existing_methods": [],
+  "research_gaps": [],
+  "hypotheses": [
+    {
+      "name": "Regime-dependent latent linear operator",
+      "novelty_status": "verification_incomplete",
+      "motivation": "The median pairwise distance between local latent operators is 0.651364. The mean pairwise distance between local latent operators is 0.600727. The maximum pairwise distance between local latent operators is 0.707787. The global latent operator spectral radius is 1.000370. The global linear model validation relative error is 0.008683. The persistence validation relative error is 0.524257. These observations motivate testing whether latent dynamics depend on the current dynamical regime instead of being represented by one time-invariant global operator.",
+      "mathematical_form": "z_next = A(s_t) @ z_t, where s_t is a state-dependent regime representation.",
+      "difference_from_existing": "The candidate replaces a single time-invariant latent linear operator with a state-conditioned operator family. This is only a candidate research direction and novelty has not been established.",
+      "why_test": "The development data show substantial variation among local latent operators. A state-conditioned operator should therefore be compared against a global linear baseline using development-only validation.",
+      "risks": [
+        "Local operator variation may be caused by finite-sample estimation noise.",
+        "The regime representation may not uniquely identify the latent dynamics.",
+        "State-conditioned operators may overfit the development training data.",
+        "The adaptive operator may become unstable during long-horizon rollout."
+      ],
+      "minimum_experiment": [
+        "Fit one global linear latent operator using development_train.",
+        "Construct multiple regimes using development_train only.",
+        "Fit one linear operator for each regime.",
+        "Evaluate one-step prediction and multi-step rollout on development_validation.",
+        "Compare against global linear and persistence baselines.",
+        "Measure rollout error and operator stability across multiple horizons."
+      ],
+      "_metadata": {
+        "source": "deterministic_research_fallback",
+        "novelty_verification": "incomplete",
+        "latent_dimension": 52,
+        "regime_signal": "strong",
+        "llm_required": false
+      },
+      "source": "deterministic_research_fallback"
+    }
+  ],
+  "recommended_next_experiment": "Evaluate the recovered regime-dependent latent operator against global-linear and persistence baselines using development-only validation.",
+  "_metadata": {
+    "model": "MiniMax-M3",
+    "literature_status": "available",
+    "paper_count": 6,
+    "research_status": "recovered",
+    "recovery_source": "deterministic_research_fallback",
+    "llm_error": "name 't' is not defined",
+    "novelty_verification": "incomplete"
+  }
+}

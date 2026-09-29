@@ -1,0 +1,270 @@
+{
+  "cycle": 7,
+  "research": {
+    "research_cycle": 7,
+    "strategy": {
+      "mode": "emergency_fallback",
+      "reason": "MiniMax request failed after 3 attempts: HTTPSConnectionPool(host='api.minimaxi.com', port=443): Read timed out. (read timeout=15.0)",
+      "llm_available": false
+    },
+    "hypotheses": [
+      {
+        "id": "H_fallback_residual",
+        "name": "Weak structured residual around global latent dynamics",
+        "scientific_question": "Can a constrained residual capture repeatable deviations left by the global operator?",
+        "mechanism": "Shared global operator plus low-complexity state-conditioned residual.",
+        "mathematical_form": "z_next = A0 z_t + DeltaA(z_t) z_t",
+        "motivation": "The global linear baseline is much stronger than the fully regime-conditioned model.",
+        "explanation_of_previous_failure": "Independent local operators may have too much variance.",
+        "distinguishing_prediction": "A constrained residual should improve validation without materially hurting one-step accuracy.",
+        "minimum_experiment": [
+          "Fit A0 on development_train",
+          "fit residual on development_train",
+          "evaluate on development_validation"
+        ],
+        "expected_observation_if_true": "Small reproducible validation gain.",
+        "expected_observation_if_false": "No gain or degradation.",
+        "risks": [
+          "overfitting"
+        ],
+        "relation_to_existing_methods": "Related to residual operator learning; novelty requires verification.",
+        "novelty_status": "verification_incomplete",
+        "generation_mode": "emergency_fallback"
+      },
+      {
+        "id": "H_fallback_memory",
+        "name": "Higher-order latent memory",
+        "scientific_question": "Is the current latent state insufficient to summarize recent history?",
+        "mechanism": "Second-order latent autoregression.",
+        "mathematical_form": "z_next = A0 z_t + A1 z_{t-1}",
+        "motivation": "Good one-step global accuracy with accumulating rollout error leaves memory as a competing explanation.",
+        "explanation_of_previous_failure": "A first-order Markov latent model may be missing temporal information.",
+        "distinguishing_prediction": "Adding one lag should reduce multi-step error if memory matters.",
+        "minimum_experiment": [
+          "Fit A0,A1 on development_train",
+          "evaluate one-step and rollout on development_validation"
+        ],
+        "expected_observation_if_true": "Lower long-horizon validation error.",
+        "expected_observation_if_false": "No improvement over global linear.",
+        "risks": [
+          "parameter growth",
+          "instability"
+        ],
+        "relation_to_existing_methods": "Related to autoregressive ROMs; novelty requires verification.",
+        "novelty_status": "verification_incomplete",
+        "generation_mode": "emergency_fallback"
+      },
+      {
+        "id": "H_fallback_lift",
+        "name": "Low-dimensional nonlinear lifting",
+        "scientific_question": "Does a compact nonlinear feature space linearize the latent evolution better?",
+        "mechanism": "Feature lifting followed by linear dynamics.",
+        "mathematical_form": "phi(z_next) approximately equals K phi(z_t)",
+        "motivation": "The global linear law may capture the dominant component while leaving structured nonlinear residuals.",
+        "explanation_of_previous_failure": "Hard regime switching is only one possible nonlinear mechanism.",
+        "distinguishing_prediction": "A compact lift should improve rollout at modest complexity.",
+        "minimum_experiment": [
+          "construct train-only feature lift",
+          "fit K on development_train",
+          "evaluate on development_validation"
+        ],
+        "expected_observation_if_true": "Improved rollout accuracy.",
+        "expected_observation_if_false": "No gain or poorer generalization.",
+        "risks": [
+          "feature explosion",
+          "overfitting"
+        ],
+        "relation_to_existing_methods": "Related to Koopman/lifting methods; novelty requires verification.",
+        "novelty_status": "verification_incomplete",
+        "generation_mode": "emergency_fallback"
+      }
+    ],
+    "artifact": "D:\\Projects\\flowrom-agent\\research\\discovery_cycles\\cycle_007.json",
+    "literature_count": 0,
+    "generation_source": "fallback"
+  },
+  "candidates": [
+    {
+      "hypothesis": {
+        "id": "H_fallback_residual",
+        "name": "Weak structured residual around global latent dynamics",
+        "scientific_question": "Can a constrained residual capture repeatable deviations left by the global operator?",
+        "mechanism": "Shared global operator plus low-complexity state-conditioned residual.",
+        "mathematical_form": "z_next = A0 z_t + DeltaA(z_t) z_t",
+        "motivation": "The global linear baseline is much stronger than the fully regime-conditioned model.",
+        "explanation_of_previous_failure": "Independent local operators may have too much variance.",
+        "distinguishing_prediction": "A constrained residual should improve validation without materially hurting one-step accuracy.",
+        "minimum_experiment": [
+          "Fit A0 on development_train",
+          "fit residual on development_train",
+          "evaluate on development_validation"
+        ],
+        "expected_observation_if_true": "Small reproducible validation gain.",
+        "expected_observation_if_false": "No gain or degradation.",
+        "risks": [
+          "overfitting"
+        ],
+        "relation_to_existing_methods": "Related to residual operator learning; novelty requires verification.",
+        "novelty_status": "verification_incomplete",
+        "generation_mode": "emergency_fallback"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H_fallback_residual",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "algorithm_result.json belongs to a different hypothesis; refusing to continue with stale artifacts.",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: H_fallback_residual | Weak structured residual around global latent dynamics\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n[AlgorithmAgent] Selected hypothesis:\nWeak structured residual around global latent dynamics\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 529\n[MiniMax] Request failed: 529 Server Error: Unknown Status Code for url: https://api.minimaxi.com/v1/text/chatcompletion_v2\n[MiniMax] Retrying in 5s...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 2/3)\n[MiniMax] HTTP 200\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract accepted.\n[AlgorithmAgent] Candidate: Weak structured residual around global latent dynamics\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C007_H_fallback_residual\",\n  \"name\": \"Weak structured residual around global latent dynamics\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [],\n  \"implementability\": {\n    \"current_pipeline_compatible\": true,\n    \"missing_inputs\": [],\n    \"required_history\": 0,\n    \"required_representation\": \"POD_latent\",\n    \"required_latent_dimension\": 52\n  },\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_007_H_fallback_residual"
+    },
+    {
+      "hypothesis": {
+        "id": "H_fallback_memory",
+        "name": "Higher-order latent memory",
+        "scientific_question": "Is the current latent state insufficient to summarize recent history?",
+        "mechanism": "Second-order latent autoregression.",
+        "mathematical_form": "z_next = A0 z_t + A1 z_{t-1}",
+        "motivation": "Good one-step global accuracy with accumulating rollout error leaves memory as a competing explanation.",
+        "explanation_of_previous_failure": "A first-order Markov latent model may be missing temporal information.",
+        "distinguishing_prediction": "Adding one lag should reduce multi-step error if memory matters.",
+        "minimum_experiment": [
+          "Fit A0,A1 on development_train",
+          "evaluate one-step and rollout on development_validation"
+        ],
+        "expected_observation_if_true": "Lower long-horizon validation error.",
+        "expected_observation_if_false": "No improvement over global linear.",
+        "risks": [
+          "parameter growth",
+          "instability"
+        ],
+        "relation_to_existing_methods": "Related to autoregressive ROMs; novelty requires verification.",
+        "novelty_status": "verification_incomplete",
+        "generation_mode": "emergency_fallback"
+      },
+      "verdict": {
+        "status": "not_implementable",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H_fallback_memory",
+        "interpretation": "The hypothesis was accepted as a scientific idea, but the current representation/runner lacks the capabilities required to execute it.",
+        "missing_inputs": [
+          "runner_explicit_history_input"
+        ],
+        "implementability": {
+          "current_pipeline_compatible": false,
+          "missing_inputs": [
+            "runner_explicit_history_input"
+          ],
+          "required_history": 1,
+          "required_representation": "POD_latent",
+          "required_latent_dimension": 52
+        },
+        "unresolved_questions": [
+          "What capability upgrade is required to evaluate this hypothesis?",
+          "Can a lower-capability discriminating experiment test part of the hypothesis?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: H_fallback_memory | Higher-order latent memory\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n[AlgorithmAgent] Selected hypothesis:\nHigher-order latent memory\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 529\n[MiniMax] Request failed: 529 Server Error: Unknown Status Code for url: https://api.minimaxi.com/v1/text/chatcompletion_v2\n[MiniMax] Retrying in 5s...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 2/3)\n[MiniMax] HTTP 529\n[MiniMax] Request failed: 529 Server Error: Unknown Status Code for url: https://api.minimaxi.com/v1/text/chatcompletion_v2\n[MiniMax] Retrying in 10s...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 3/3)\n[MiniMax] HTTP 200\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Candidate is scientifically expressible but not executable under the current pipeline.\n  - runner_explicit_history_input\n{\n  \"status\": \"not_implementable\",\n  \"candidate_id\": \"H_fallback_memory\",\n  \"name\": \"Higher-order latent memory\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [\n    \"Candidate requires capabilities unavailable in the current runner: runner_explicit_history_input\"\n  ],\n  \"missing_inputs\": [\n    \"runner_explicit_history_input\"\n  ],\n  \"implementability\": {\n    \"current_pipeline_compatible\": false,\n    \"missing_inputs\": [\n      \"runner_explicit_history_input\"\n    ],\n    \"required_history\": 1,\n    \"required_representation\": \"POD_latent\",\n    \"required_latent_dimension\": 52\n  },\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        },
+        {
+          "ok": true,
+          "script": "run_code.py",
+          "skipped": true,
+          "reason": "algorithm_not_implementable"
+        },
+        {
+          "ok": true,
+          "script": "run_smoke_test.py",
+          "skipped": true,
+          "reason": "algorithm_not_implementable"
+        },
+        {
+          "ok": true,
+          "script": "run_experiment.py",
+          "skipped": true,
+          "reason": "algorithm_not_implementable"
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_007_H_fallback_memory"
+    },
+    {
+      "hypothesis": {
+        "id": "H_fallback_lift",
+        "name": "Low-dimensional nonlinear lifting",
+        "scientific_question": "Does a compact nonlinear feature space linearize the latent evolution better?",
+        "mechanism": "Feature lifting followed by linear dynamics.",
+        "mathematical_form": "phi(z_next) approximately equals K phi(z_t)",
+        "motivation": "The global linear law may capture the dominant component while leaving structured nonlinear residuals.",
+        "explanation_of_previous_failure": "Hard regime switching is only one possible nonlinear mechanism.",
+        "distinguishing_prediction": "A compact lift should improve rollout at modest complexity.",
+        "minimum_experiment": [
+          "construct train-only feature lift",
+          "fit K on development_train",
+          "evaluate on development_validation"
+        ],
+        "expected_observation_if_true": "Improved rollout accuracy.",
+        "expected_observation_if_false": "No gain or poorer generalization.",
+        "risks": [
+          "feature explosion",
+          "overfitting"
+        ],
+        "relation_to_existing_methods": "Related to Koopman/lifting methods; novelty requires verification.",
+        "novelty_status": "verification_incomplete",
+        "generation_mode": "emergency_fallback"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H_fallback_lift",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"rollout ��� shape ����(10, 52), ���� (11, 52)\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 252, in run_smoke_test\\n    raise ValueError(\\n    ...<3 lines>...\\n    )\\nValueError: rollout ��� shape ����(10, 52), ���� (11, 52)\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: H_fallback_lift | Low-dimensional nonlinear lifting\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n[AlgorithmAgent] Selected hypothesis:\nLow-dimensional nonlinear lifting\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 200\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract accepted.\n[AlgorithmAgent] Candidate: Low-dimensional nonlinear lifting\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"H_fallback_lift\",\n  \"name\": \"Low-dimensional nonlinear lifting\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [],\n  \"implementability\": {\n    \"current_pipeline_compatible\": true,\n    \"missing_inputs\": [],\n    \"required_history\": 0,\n    \"required_representation\": \"POD_latent\",\n    \"required_latent_dimension\": 52\n  },\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        },
+        {
+          "ok": true,
+          "script": "run_code.py",
+          "returncode": 0,
+          "stdout": "\n======================================================================\nFLOWROM CODE AGENT\n======================================================================\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 200\n\n======================================================================\nCODE RESULT\n======================================================================\n\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"H_fallback_lift\",\n  \"candidate_name\": \"Low-dimensional nonlinear lifting\",\n  \"code_source\": \"llm\",\n  \"model_path\": \"algorithms\\\\discovered\\\\implementation\\\\model.py\",\n  \"validation\": {\n    \"status\": \"valid\",\n    \"required_methods\": [\n      \"__init__\",\n      \"fit\",\n      \"predict_next\",\n      \"rollout\"\n    ],\n    \"candidate_class\": \"CandidateModel\"\n  }\n}\n\nOutput:\n  algorithms\\discovered\\implementation\n",
+          "stderr": ""
+        },
+        {
+          "ok": false,
+          "script": "run_smoke_test.py",
+          "returncode": 1,
+          "stdout": "\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"rollout ��� shape ����(10, 52), ���� (11, 52)\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 252, in run_smoke_test\\n    raise ValueError(\\n    ...<3 lines>...\\n    )\\nValueError: rollout ��� shape ����(10, 52), ���� (11, 52)\\n\"\n}\n\n[FAILED] Smoke test failed.\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_007_H_fallback_lift"
+    }
+  ]
+}

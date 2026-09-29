@@ -1,0 +1,288 @@
+{
+  "cycle": 2,
+  "research": {
+    "research_cycle": 2,
+    "strategy": {
+      "mode": "parallel_exploration_with_mechanism_diversification",
+      "reason": "Cycles 0 and 1 produced no evaluable scientific signal: BOOTSTRAP_H1 was inconclusive due to incomparable output schema, and C001_H01/H02/H03 all failed for the same infrastructural reason (AlgorithmAgent.run() signature mismatch), so none of their mechanisms have been scientifically tested. The cycle-1 set already covered three mechanism families (temporal delay embedding, divergence-free physics constraint, multi-scale slow-manifold splitting). To advance science rather than re-run the same idea, cycle 2 explores three genuinely different mechanisms — geometric/symplectic structure preservation, exogenous-parameter conditioning, and sparse-symbolic closure with learned residual. All three are run in parallel under a normalized evaluation protocol so that their one-step and multi-step metrics, plus mechanism-specific diagnostic quantities, are directly falsifiable against each other."
+    },
+    "hypotheses": [
+      {
+        "id": "C002_H01",
+        "name": "Symplectic / energy-preserving geometric reduction",
+        "scientific_question": "Is the failure of previous ROM attempts caused by violation of an underlying geometric or energy-preserving structure during the reduction and rollout steps, and does enforcing that structure measurably improve long-horizon stability?",
+        "mechanism": "The reduced-order dynamics are constrained to preserve a geometric structure (symplectic form, Dirac/port-Hamiltonian structure, or a learned energy-like conserved quantity). The reduction is performed on a structured manifold rather than on raw Euclidean snapshots, and the time-stepper is a structure-preserving map. This is mechanistically distinct from C001_H02 (which imposed a solenoidal / divergence-free constraint on the spatial field): here the constraint is on the dynamics, not on the spatial field, and is about the temporal evolution operator's geometric invariants.",
+        "mathematical_form": "Let x ∈ R^N be the full state and z = Φ(x) ∈ M the latent state on a structured manifold M with symplectic form ω (or Poisson tensor J). We learn Φ such that x_{t+1} = F_Δ(x_t) implies z_{t+1} = Ψ_Δ(z_t) where Ψ_Δ^* ω = ω (symplectic) or where H(z_{t+1}) ≈ H(z_t) for a learned Hamiltonian H. Equivalently in port-Hamiltonian form: dz/dt = (J(z) - R(z)) ∂H/∂z + g(z) u, where J is skew-symmetric and R ⪰ 0.",
+        "motivation": "Cycle-1 attempts operated in flat Euclidean latent spaces and treated the time-stepper as an unconstrained map. In many physical systems (Hamiltonian mechanics, conservative or weakly-dissipative flows, multi-body dynamics, ideal MHD), the dominant source of long-horizon error is geometric drift: energy creeps upward, symplectic area is not preserved, and rollouts slowly diverge from the true attractor. If structure preservation is the missing ingredient, constraining the model to respect that structure should suppress drift without increasing parameters.",
+        "explanation_of_previous_failure": "C001_H02 attempted a spatial physics constraint (divergence-free) but did not constrain the temporal integrator. C001_H01 added memory but kept an unconstrained map. C001_H03 separated scales but used unconstrained evolution in each block. None attacked geometric drift in the time-stepper itself, which is the hypothesized dominant error source for long rollouts.",
+        "distinguishing_prediction": "On long rollouts the symplectic/energy-preserving model will (i) keep energy drift bounded or grow sublinearly with horizon, while an unconstrained baseline with comparable one-step error will show secular drift; (ii) yield a learned H(z) or symplectic form whose preservation correlates with rollout accuracy, whereas an unconstrained model will not show such correlation.",
+        "minimum_experiment": [
+          "Train a structure-preserving reduced model on development_train using either a symplectic integrator in latent space or a port-Hamiltonian parameterization.",
+          "Train a matched-capacity unconstrained latent map baseline on the same data.",
+          "Evaluate both on development_validation at horizons H ∈ {1, 10, 100, 1000} reporting one-step MSE, rollout MSE, and a mechanism-specific diagnostic: energy drift E(z_t) − E(z_0) (or symplectic-form residual).",
+          "Falsification criterion: If the structure-preserving model's rollout error at H=1000 is NOT statistically lower than the unconstrained baseline's (paired test on stratified validation trajectories, p > 0.05) AND its energy/symplectic diagnostic is NOT measurably more stable, the geometric-structure mechanism is falsified for this system."
+        ],
+        "expected_observation_if_true": "Rollout MSE grows sublinearly with horizon for the structure-preserving model, while it grows superlinearly for the baseline; energy drift is bounded or oscillates for the constrained model and accumulates monotonically for the baseline.",
+        "expected_observation_if_false": "Both models show statistically indistinguishable rollout error growth and indistinguishable energy diagnostics, suggesting the bottleneck is not geometric structure but rather something else (memory, parameter dependence, or nonlinear basis).",
+        "risks": [
+          "The system may be strongly dissipative and possess no meaningful conserved quantity, in which case symplectic/port-Hamiltonian constraints are inappropriate.",
+          "Learning the symplectic form or Hamiltonian from data is itself a hard inverse problem; misspecification could mask the benefit.",
+          "One-step error may already be small enough that structure preservation does not measurably help."
+        ],
+        "relation_to_existing_methods": "Related to symplectic integrators, variational integrators, port-Hamiltonian neural networks, and GENERIC framework; differs from projection-based POD/DMD ROMs which impose no temporal geometric constraint, and from C001_H02 which imposed a spatial solenoidal constraint rather than a temporal geometric one.",
+        "novelty_status": "verification_incomplete",
+        "proposed_id": "H1",
+        "generation_cycle": 2,
+        "generation_source": "llm"
+      },
+      {
+        "id": "C002_H02",
+        "name": "Exogenous-parameter-conditioned local Koopman / regime-aware linear operator",
+        "scientific_question": "Is the dominant source of ROM error the fact that the dynamics operator is fundamentally a function of an exogenous slow parameter (forcing amplitude, Reynolds number, boundary condition, control input, or slow mode amplitude), so that any single global linear operator is misspecified?",
+        "mechanism": "The reduced dynamics are represented as a family of operators {A(μ)} indexed by an exogenous conditioning variable μ, with a small gating or interpolation network mapping μ into operator coefficients. This is mechanistically distinct from BOOTSTRAP_H1 (which had a regime-dependent family but only as a baseline whose evaluation schema was incomparable) and from C001_H01 (which is purely Markovian in z with temporal memory but no exogenous input). Here the conditioning variable is the proposed source of variability itself.",
+        "mathematical_form": "z_{t+1} = A(μ_t) z_t + B(μ_t) u_t, with A(μ) = Σ_k α_k(μ) A_k where {A_k} is a small bank of linear operators and α_k(μ) is a softmax-gating network; equivalently z_{t+1} = W(μ_t) z_t with W = W_0 + ΔW(μ_t), ΔW low-rank. The exogenous parameter μ_t is supplied at evaluation time (it is observed, not inferred).",
+        "motivation": "Many reduced-order modeling failures arise from training a single global operator on trajectories that actually live in multiple regimes. When the conditioning parameter is available but ignored, the model must average over regimes, producing systematically biased one-step predictions and unstable rollouts. Conditioning by an exogenous observable is the cleanest testable hypothesis because the parameter is directly measurable at evaluation, removing confounding with latent discovery.",
+        "explanation_of_previous_failure": "BOOTSTRAP_H1 contained a regime-dependent family but its evaluation schema was not comparable, so no scientific verdict was possible. C001_H01/H02/H03 all assumed a single fixed map or fixed structural constraint regardless of regime. If the true operator is strongly parameter-dependent, then any globally-fitted ROM averages incompatible regimes and cannot reach low error regardless of architecture capacity.",
+        "distinguishing_prediction": "An ablation that removes the conditioning input (forcing μ_t = constant or random) will produce a statistically significant increase in both one-step and rollout error on development_validation, with the gap growing at long horizons. Furthermore, gating weights α_k(μ) should be interpretable (e.g., piecewise constant across known regimes), and stratification of validation error by μ-regime should reveal that the conditioned model is approximately uniform across regimes while the ablated model is not.",
+        "minimum_experiment": [
+          "Train the parameter-conditioned ROM on development_train with μ_t supplied.",
+          "Train an identical-architecture ablated model with μ_t replaced by a constant or zero.",
+          "Evaluate both on development_validation, stratified by μ regime; for each trajectory report one-step MSE, rollout MSE, and the maximum per-regime error.",
+          "Falsification criterion: If the conditioned model does NOT show a statistically significant error decrease vs the ablation (paired Wilcoxon over stratified regimes, p > 0.05) AND the gating weights are NOT concentrated (max α_k < 2/K for the K most extreme regimes), the exogenous-conditioning mechanism is falsified for this system."
+        ],
+        "expected_observation_if_true": "Conditioned model has lower rollout error than ablated model; error gap grows with horizon; per-regime error is approximately uniform; gating weights show clear regime structure.",
+        "expected_observation_if_false": "Conditioned and ablated models are statistically indistinguishable; gating weights are diffuse; per-regime errors are similar for both, indicating parameter dependence is not the dominant source of error.",
+        "risks": [
+          "If μ is not actually in the trajectories or is poorly informative, the mechanism will appear falsely falsified.",
+          "Gating network may collapse to a single regime, masking benefit.",
+          "Confounding with latent discovery: if μ must be inferred rather than observed, evaluation becomes ambiguous."
+        ],
+        "relation_to_existing_methods": "Related to parametric/multi-fidelity ROM, Loewner framework with parameters, and switchable/branched linear operators; differs from delay-embedding (which is endogenous memory) and from the BOOTSTRAP_H1 regime family whose scientific evaluation was inconclusive.",
+        "novelty_status": "verification_incomplete",
+        "proposed_id": "H2",
+        "generation_cycle": 2,
+        "generation_source": "llm"
+      },
+      {
+        "id": "C002_H03",
+        "name": "Sparse symbolic identification with learned closure residual",
+        "scientific_question": "Is the dominant ROM error caused by an inadequate or non-interpretable nonlinear basis in the latent space, such that enforcing sparsity and physical interpretability of the identified dynamics — while absorbing the remainder in a small learned residual — yields both better generalization and a falsifiable, inspectable model?",
+        "mechanism": "A sparse symbolic/linear-combination mode is identified on the latent dynamics (e.g., SINDy-style selection over a candidate library of polynomial, trigonometric, and physically motivated terms), producing an interpretable closed-form component. A small learned network then models the residual closure term that the sparse basis misses. This is mechanistically distinct from C001_H01/H02/H03 which use no-learned symbolic structure; here the dominant dynamics must be expressible in a compact, named basis and the remainder must be genuinely small.",
+        "mathematical_form": "dz/dt = Ξ^T Θ(z) + R_θ(z), where Ξ is a sparse coefficient matrix identified by sequential thresholded least squares over a library Θ (e.g., {1, z_i, z_i z_j, sin(z_k), ...}), and R_θ is a small neural closure. The sparsity is enforced by hard thresholding or STRRidge; the residual is trained to match (dz/dt − Ξ^T Θ(z)) on data.",
+        "motivation": "When reduced-order models fail, a common scientific reason is that the chosen basis is too rigid (POD modes miss interactions) or too unstructured (neural networks memorize without generalization). A sparse symbolic identification step provides an inspectable, low-dimensional, physically interpretable skeleton; the closure residual then captures only what the skeleton misses. If the residual turns out to be large, the falsifiable interpretation is that the chosen library is inadequate; if the residual is small and generalization improves, the sparse basis is the right scientific explanation.",
+        "explanation_of_previous_failure": "C001_H01 relied on a generic delay-embedding map with no symbolic structure; C001_H02 imposed a spatial constraint but left the temporal map generic; C001_H03 split scales but did not require identifiability of the dominant terms. None produced a sparse, named, inspectable form for the dynamics. If the failure is due to an unidentifiable, over-parameterized latent map that does not generalize, a sparse skeleton plus small residual should outperform a pure black box at matched capacity.",
+        "distinguishing_prediction": "On development_validation the sparse+residual model should (i) yield a sparse Ξ (density below a threshold, e.g., <10% nonzero) with named terms that are scientifically plausible; (ii) achieve lower rollout error than a matched-capacity pure black-box baseline at long horizons; (iii) have a residual norm that is small relative to the sparse-skeleton norm. If the residual is large and the sparse skeleton is dense, the basis is inadequate; if the residual is small but rollout error is not better than the black box, the sparsity itself is not the scientific mechanism.",
+        "minimum_experiment": [
+          "Apply sparse symbolic identification to latent dynamics on development_train to obtain a closed-form component Ξ^T Θ(z).",
+          "Train a small residual network on the residual (dz/dt − Ξ^T Θ(z)).",
+          "Train a matched-capacity pure black-box baseline on the same prediction target.",
+          "Evaluate on development_validation: report rollout MSE, density of Ξ, residual-to-skeleton norm ratio, and qualitative inspection of identified terms.",
+          "Falsification criterion: If Ξ is NOT sparse (density ≥ 30%) AND residual norm is comparable to the pure black-box output norm AND rollout MSE is NOT statistically lower than the black-box baseline (paired test, p > 0.05), the sparse-skeleton-plus-residual mechanism is falsified."
+        ],
+        "expected_observation_if_true": "Identified Ξ is sparse with physically meaningful monomials; residual norm is < 50% of skeleton norm; rollout error is lower than matched-capacity black box at long horizons.",
+        "expected_observation_if_false": "Identified Ξ is dense, residual is comparable to a full nonlinear map, and rollout error matches the black box, indicating the chosen library is inadequate and sparsity is not the bottleneck.",
+        "risks": [
+          "Library selection is itself a modeling choice; an inadequate library will mask the mechanism.",
+          "Sparse identification is sensitive to noise and threshold choice; misleading sparsity can occur.",
+          "Closure residual may absorb all dynamics if trained without constraints, defeating the sparsity mechanism."
+        ],
+        "relation_to_existing_methods": "Related to SINDy, gray-box modeling, and equation discovery; differs from neural-only latent ROMs (no symbolic skeleton) and from delay-embedding ROMs (no exogenous closure). Distinct from C001_H03 which separated scales but did not require sparse symbolic identifiability.",
+        "novelty_status": "verification_incomplete",
+        "proposed_id": "H3",
+        "generation_cycle": 2,
+        "generation_source": "llm"
+      }
+    ],
+    "artifact": "D:\\Projects\\flowrom-agent\\research\\discovery_cycles\\cycle_002.json",
+    "literature_count": 0,
+    "literature_queries": [
+      "Multi-scale operator decomposition into slow manifold and fast fluctuation correction reduced order modeling failure The candidate could not be scientifically evaluated because execution failed.",
+      "Can the hypothesis be evaluated after the implementation or execution failure is fixed? Was the failure scientific or purely infrastructural?"
+    ],
+    "generation_source": "llm"
+  },
+  "candidates": [
+    {
+      "hypothesis": {
+        "id": "C002_H01",
+        "name": "Symplectic / energy-preserving geometric reduction",
+        "scientific_question": "Is the failure of previous ROM attempts caused by violation of an underlying geometric or energy-preserving structure during the reduction and rollout steps, and does enforcing that structure measurably improve long-horizon stability?",
+        "mechanism": "The reduced-order dynamics are constrained to preserve a geometric structure (symplectic form, Dirac/port-Hamiltonian structure, or a learned energy-like conserved quantity). The reduction is performed on a structured manifold rather than on raw Euclidean snapshots, and the time-stepper is a structure-preserving map. This is mechanistically distinct from C001_H02 (which imposed a solenoidal / divergence-free constraint on the spatial field): here the constraint is on the dynamics, not on the spatial field, and is about the temporal evolution operator's geometric invariants.",
+        "mathematical_form": "Let x ∈ R^N be the full state and z = Φ(x) ∈ M the latent state on a structured manifold M with symplectic form ω (or Poisson tensor J). We learn Φ such that x_{t+1} = F_Δ(x_t) implies z_{t+1} = Ψ_Δ(z_t) where Ψ_Δ^* ω = ω (symplectic) or where H(z_{t+1}) ≈ H(z_t) for a learned Hamiltonian H. Equivalently in port-Hamiltonian form: dz/dt = (J(z) - R(z)) ∂H/∂z + g(z) u, where J is skew-symmetric and R ⪰ 0.",
+        "motivation": "Cycle-1 attempts operated in flat Euclidean latent spaces and treated the time-stepper as an unconstrained map. In many physical systems (Hamiltonian mechanics, conservative or weakly-dissipative flows, multi-body dynamics, ideal MHD), the dominant source of long-horizon error is geometric drift: energy creeps upward, symplectic area is not preserved, and rollouts slowly diverge from the true attractor. If structure preservation is the missing ingredient, constraining the model to respect that structure should suppress drift without increasing parameters.",
+        "explanation_of_previous_failure": "C001_H02 attempted a spatial physics constraint (divergence-free) but did not constrain the temporal integrator. C001_H01 added memory but kept an unconstrained map. C001_H03 separated scales but used unconstrained evolution in each block. None attacked geometric drift in the time-stepper itself, which is the hypothesized dominant error source for long rollouts.",
+        "distinguishing_prediction": "On long rollouts the symplectic/energy-preserving model will (i) keep energy drift bounded or grow sublinearly with horizon, while an unconstrained baseline with comparable one-step error will show secular drift; (ii) yield a learned H(z) or symplectic form whose preservation correlates with rollout accuracy, whereas an unconstrained model will not show such correlation.",
+        "minimum_experiment": [
+          "Train a structure-preserving reduced model on development_train using either a symplectic integrator in latent space or a port-Hamiltonian parameterization.",
+          "Train a matched-capacity unconstrained latent map baseline on the same data.",
+          "Evaluate both on development_validation at horizons H ∈ {1, 10, 100, 1000} reporting one-step MSE, rollout MSE, and a mechanism-specific diagnostic: energy drift E(z_t) − E(z_0) (or symplectic-form residual).",
+          "Falsification criterion: If the structure-preserving model's rollout error at H=1000 is NOT statistically lower than the unconstrained baseline's (paired test on stratified validation trajectories, p > 0.05) AND its energy/symplectic diagnostic is NOT measurably more stable, the geometric-structure mechanism is falsified for this system."
+        ],
+        "expected_observation_if_true": "Rollout MSE grows sublinearly with horizon for the structure-preserving model, while it grows superlinearly for the baseline; energy drift is bounded or oscillates for the constrained model and accumulates monotonically for the baseline.",
+        "expected_observation_if_false": "Both models show statistically indistinguishable rollout error growth and indistinguishable energy diagnostics, suggesting the bottleneck is not geometric structure but rather something else (memory, parameter dependence, or nonlinear basis).",
+        "risks": [
+          "The system may be strongly dissipative and possess no meaningful conserved quantity, in which case symplectic/port-Hamiltonian constraints are inappropriate.",
+          "Learning the symplectic form or Hamiltonian from data is itself a hard inverse problem; misspecification could mask the benefit.",
+          "One-step error may already be small enough that structure preservation does not measurably help."
+        ],
+        "relation_to_existing_methods": "Related to symplectic integrators, variational integrators, port-Hamiltonian neural networks, and GENERIC framework; differs from projection-based POD/DMD ROMs which impose no temporal geometric constraint, and from C001_H02 which imposed a spatial solenoidal constraint rather than a temporal geometric one.",
+        "novelty_status": "verification_incomplete",
+        "proposed_id": "H1",
+        "generation_cycle": 2,
+        "generation_source": "llm"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C002_H01",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"latent_dim does not match the approved algorithm contract\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 183, in run_smoke_test\\n    model = CandidateModel(\\n        latent_dim=latent_dim,\\n        seed=0,\\n    )\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\implementation\\\\model.py\\\", line 20, in __init__\\n    raise ValueError(\\n    ...<2 lines>...\\n    )\\nValueError: latent_dim does not match the approved algorithm contract\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C002_H01 | Symplectic / energy-preserving geometric reduction\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n\n[AlgorithmAgent] Selected hypothesis:\nSymplectic / energy-preserving geometric reduction\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract accepted.\n[AlgorithmAgent] Candidate: Symplectic / energy-preserving geometric reduction\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C002_H01\",\n  \"name\": \"Symplectic / energy-preserving geometric reduction\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [],\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        },
+        {
+          "ok": true,
+          "script": "run_code.py",
+          "returncode": 0,
+          "stdout": "\n======================================================================\nFLOWROM CODE AGENT\n======================================================================\n\n[CodeAgent] Loading approved algorithm contract...\n[CodeAgent] Candidate: Symplectic / energy-preserving geometric reduction\n\n[CodeAgent] Generating Python implementation...\n\n[CodeAgent] Running static code validator...\n\n[CodeAgent] LLM-generated code failed static validation:\n  Python syntax error:\nunterminated string literal (detected at line 33) (<unknown>, line 33)\n\n[CodeAgent] Switching to deterministic NumPy implementation...\n\n[CodeAgent] Deterministic implementation passed static validation.\n\n[CodeAgent] Code accepted.\n[CodeAgent] Source: deterministic_fallback\n[CodeAgent] Saved to: algorithms\\discovered\\implementation\\model.py\n\n======================================================================\nCODE RESULT\n======================================================================\n\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C002_H01\",\n  \"candidate_name\": \"Symplectic / energy-preserving geometric reduction\",\n  \"code_source\": \"deterministic_fallback\",\n  \"model_path\": \"algorithms\\\\discovered\\\\implementation\\\\model.py\",\n  \"validation\": {\n    \"status\": \"valid\",\n    \"required_methods\": [\n      \"__init__\",\n      \"fit\",\n      \"predict_next\",\n      \"rollout\"\n    ],\n    \"candidate_class\": \"CandidateModel\"\n  },\n  \"llm_error\": \"Python syntax error:\\nunterminated string literal (detected at line 33) (<unknown>, line 33)\"\n}\n\nOutput:\n  algorithms\\discovered\\implementation\n",
+          "stderr": ""
+        },
+        {
+          "ok": false,
+          "script": "run_smoke_test.py",
+          "returncode": 1,
+          "stdout": "\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"latent_dim does not match the approved algorithm contract\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 183, in run_smoke_test\\n    model = CandidateModel(\\n        latent_dim=latent_dim,\\n        seed=0,\\n    )\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\implementation\\\\model.py\\\", line 20, in __init__\\n    raise ValueError(\\n    ...<2 lines>...\\n    )\\nValueError: latent_dim does not match the approved algorithm contract\\n\"\n}\n\n[FAILED] Smoke test failed.\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_002_C002_H01"
+    },
+    {
+      "hypothesis": {
+        "id": "C002_H02",
+        "name": "Exogenous-parameter-conditioned local Koopman / regime-aware linear operator",
+        "scientific_question": "Is the dominant source of ROM error the fact that the dynamics operator is fundamentally a function of an exogenous slow parameter (forcing amplitude, Reynolds number, boundary condition, control input, or slow mode amplitude), so that any single global linear operator is misspecified?",
+        "mechanism": "The reduced dynamics are represented as a family of operators {A(μ)} indexed by an exogenous conditioning variable μ, with a small gating or interpolation network mapping μ into operator coefficients. This is mechanistically distinct from BOOTSTRAP_H1 (which had a regime-dependent family but only as a baseline whose evaluation schema was incomparable) and from C001_H01 (which is purely Markovian in z with temporal memory but no exogenous input). Here the conditioning variable is the proposed source of variability itself.",
+        "mathematical_form": "z_{t+1} = A(μ_t) z_t + B(μ_t) u_t, with A(μ) = Σ_k α_k(μ) A_k where {A_k} is a small bank of linear operators and α_k(μ) is a softmax-gating network; equivalently z_{t+1} = W(μ_t) z_t with W = W_0 + ΔW(μ_t), ΔW low-rank. The exogenous parameter μ_t is supplied at evaluation time (it is observed, not inferred).",
+        "motivation": "Many reduced-order modeling failures arise from training a single global operator on trajectories that actually live in multiple regimes. When the conditioning parameter is available but ignored, the model must average over regimes, producing systematically biased one-step predictions and unstable rollouts. Conditioning by an exogenous observable is the cleanest testable hypothesis because the parameter is directly measurable at evaluation, removing confounding with latent discovery.",
+        "explanation_of_previous_failure": "BOOTSTRAP_H1 contained a regime-dependent family but its evaluation schema was not comparable, so no scientific verdict was possible. C001_H01/H02/H03 all assumed a single fixed map or fixed structural constraint regardless of regime. If the true operator is strongly parameter-dependent, then any globally-fitted ROM averages incompatible regimes and cannot reach low error regardless of architecture capacity.",
+        "distinguishing_prediction": "An ablation that removes the conditioning input (forcing μ_t = constant or random) will produce a statistically significant increase in both one-step and rollout error on development_validation, with the gap growing at long horizons. Furthermore, gating weights α_k(μ) should be interpretable (e.g., piecewise constant across known regimes), and stratification of validation error by μ-regime should reveal that the conditioned model is approximately uniform across regimes while the ablated model is not.",
+        "minimum_experiment": [
+          "Train the parameter-conditioned ROM on development_train with μ_t supplied.",
+          "Train an identical-architecture ablated model with μ_t replaced by a constant or zero.",
+          "Evaluate both on development_validation, stratified by μ regime; for each trajectory report one-step MSE, rollout MSE, and the maximum per-regime error.",
+          "Falsification criterion: If the conditioned model does NOT show a statistically significant error decrease vs the ablation (paired Wilcoxon over stratified regimes, p > 0.05) AND the gating weights are NOT concentrated (max α_k < 2/K for the K most extreme regimes), the exogenous-conditioning mechanism is falsified for this system."
+        ],
+        "expected_observation_if_true": "Conditioned model has lower rollout error than ablated model; error gap grows with horizon; per-regime error is approximately uniform; gating weights show clear regime structure.",
+        "expected_observation_if_false": "Conditioned and ablated models are statistically indistinguishable; gating weights are diffuse; per-regime errors are similar for both, indicating parameter dependence is not the dominant source of error.",
+        "risks": [
+          "If μ is not actually in the trajectories or is poorly informative, the mechanism will appear falsely falsified.",
+          "Gating network may collapse to a single regime, masking benefit.",
+          "Confounding with latent discovery: if μ must be inferred rather than observed, evaluation becomes ambiguous."
+        ],
+        "relation_to_existing_methods": "Related to parametric/multi-fidelity ROM, Loewner framework with parameters, and switchable/branched linear operators; differs from delay-embedding (which is endogenous memory) and from the BOOTSTRAP_H1 regime family whose scientific evaluation was inconclusive.",
+        "novelty_status": "verification_incomplete",
+        "proposed_id": "H2",
+        "generation_cycle": 2,
+        "generation_source": "llm"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C002_H02",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"latent_dim does not match the approved algorithm contract\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 183, in run_smoke_test\\n    model = CandidateModel(\\n        latent_dim=latent_dim,\\n        seed=0,\\n    )\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\implementation\\\\model.py\\\", line 20, in __init__\\n    raise ValueError(\\n    ...<2 lines>...\\n    )\\nValueError: latent_dim does not match the approved algorithm contract\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C002_H02 | Exogenous-parameter-conditioned local Koopman / regime-aware linear operator\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n\n[AlgorithmAgent] Selected hypothesis:\nExogenous-parameter-conditioned local Koopman / regime-aware linear operator\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n\n[AlgorithmAgent] Initial JSON parsing failed.\n[AlgorithmAgent] Reason: Unable to parse valid JSON.\n\n[AlgorithmAgent] Starting JSON repair...\n[AlgorithmAgent] JSON repair succeeded.\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract accepted.\n[AlgorithmAgent] Candidate: Exogenous-parameter-conditioned local Koopman operator\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C002_H02\",\n  \"name\": \"Exogenous-parameter-conditioned local Koopman operator\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [],\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        },
+        {
+          "ok": true,
+          "script": "run_code.py",
+          "returncode": 0,
+          "stdout": "\n======================================================================\nFLOWROM CODE AGENT\n======================================================================\n\n[CodeAgent] Loading approved algorithm contract...\n[CodeAgent] Candidate: Exogenous-parameter-conditioned local Koopman operator\n\n[CodeAgent] Generating Python implementation...\n\n[CodeAgent] Running static code validator...\n\n[CodeAgent] LLM-generated code failed static validation:\n  Python syntax error:\nunterminated string literal (detected at line 41) (<unknown>, line 41)\n\n[CodeAgent] Switching to deterministic NumPy implementation...\n\n[CodeAgent] Deterministic implementation passed static validation.\n\n[CodeAgent] Code accepted.\n[CodeAgent] Source: deterministic_fallback\n[CodeAgent] Saved to: algorithms\\discovered\\implementation\\model.py\n\n======================================================================\nCODE RESULT\n======================================================================\n\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C002_H02\",\n  \"candidate_name\": \"Exogenous-parameter-conditioned local Koopman operator\",\n  \"code_source\": \"deterministic_fallback\",\n  \"model_path\": \"algorithms\\\\discovered\\\\implementation\\\\model.py\",\n  \"validation\": {\n    \"status\": \"valid\",\n    \"required_methods\": [\n      \"__init__\",\n      \"fit\",\n      \"predict_next\",\n      \"rollout\"\n    ],\n    \"candidate_class\": \"CandidateModel\"\n  },\n  \"llm_error\": \"Python syntax error:\\nunterminated string literal (detected at line 41) (<unknown>, line 41)\"\n}\n\nOutput:\n  algorithms\\discovered\\implementation\n",
+          "stderr": ""
+        },
+        {
+          "ok": false,
+          "script": "run_smoke_test.py",
+          "returncode": 1,
+          "stdout": "\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"latent_dim does not match the approved algorithm contract\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 183, in run_smoke_test\\n    model = CandidateModel(\\n        latent_dim=latent_dim,\\n        seed=0,\\n    )\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\implementation\\\\model.py\\\", line 20, in __init__\\n    raise ValueError(\\n    ...<2 lines>...\\n    )\\nValueError: latent_dim does not match the approved algorithm contract\\n\"\n}\n\n[FAILED] Smoke test failed.\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_002_C002_H02"
+    },
+    {
+      "hypothesis": {
+        "id": "C002_H03",
+        "name": "Sparse symbolic identification with learned closure residual",
+        "scientific_question": "Is the dominant ROM error caused by an inadequate or non-interpretable nonlinear basis in the latent space, such that enforcing sparsity and physical interpretability of the identified dynamics — while absorbing the remainder in a small learned residual — yields both better generalization and a falsifiable, inspectable model?",
+        "mechanism": "A sparse symbolic/linear-combination mode is identified on the latent dynamics (e.g., SINDy-style selection over a candidate library of polynomial, trigonometric, and physically motivated terms), producing an interpretable closed-form component. A small learned network then models the residual closure term that the sparse basis misses. This is mechanistically distinct from C001_H01/H02/H03 which use no-learned symbolic structure; here the dominant dynamics must be expressible in a compact, named basis and the remainder must be genuinely small.",
+        "mathematical_form": "dz/dt = Ξ^T Θ(z) + R_θ(z), where Ξ is a sparse coefficient matrix identified by sequential thresholded least squares over a library Θ (e.g., {1, z_i, z_i z_j, sin(z_k), ...}), and R_θ is a small neural closure. The sparsity is enforced by hard thresholding or STRRidge; the residual is trained to match (dz/dt − Ξ^T Θ(z)) on data.",
+        "motivation": "When reduced-order models fail, a common scientific reason is that the chosen basis is too rigid (POD modes miss interactions) or too unstructured (neural networks memorize without generalization). A sparse symbolic identification step provides an inspectable, low-dimensional, physically interpretable skeleton; the closure residual then captures only what the skeleton misses. If the residual turns out to be large, the falsifiable interpretation is that the chosen library is inadequate; if the residual is small and generalization improves, the sparse basis is the right scientific explanation.",
+        "explanation_of_previous_failure": "C001_H01 relied on a generic delay-embedding map with no symbolic structure; C001_H02 imposed a spatial constraint but left the temporal map generic; C001_H03 split scales but did not require identifiability of the dominant terms. None produced a sparse, named, inspectable form for the dynamics. If the failure is due to an unidentifiable, over-parameterized latent map that does not generalize, a sparse skeleton plus small residual should outperform a pure black box at matched capacity.",
+        "distinguishing_prediction": "On development_validation the sparse+residual model should (i) yield a sparse Ξ (density below a threshold, e.g., <10% nonzero) with named terms that are scientifically plausible; (ii) achieve lower rollout error than a matched-capacity pure black-box baseline at long horizons; (iii) have a residual norm that is small relative to the sparse-skeleton norm. If the residual is large and the sparse skeleton is dense, the basis is inadequate; if the residual is small but rollout error is not better than the black box, the sparsity itself is not the scientific mechanism.",
+        "minimum_experiment": [
+          "Apply sparse symbolic identification to latent dynamics on development_train to obtain a closed-form component Ξ^T Θ(z).",
+          "Train a small residual network on the residual (dz/dt − Ξ^T Θ(z)).",
+          "Train a matched-capacity pure black-box baseline on the same prediction target.",
+          "Evaluate on development_validation: report rollout MSE, density of Ξ, residual-to-skeleton norm ratio, and qualitative inspection of identified terms.",
+          "Falsification criterion: If Ξ is NOT sparse (density ≥ 30%) AND residual norm is comparable to the pure black-box output norm AND rollout MSE is NOT statistically lower than the black-box baseline (paired test, p > 0.05), the sparse-skeleton-plus-residual mechanism is falsified."
+        ],
+        "expected_observation_if_true": "Identified Ξ is sparse with physically meaningful monomials; residual norm is < 50% of skeleton norm; rollout error is lower than matched-capacity black box at long horizons.",
+        "expected_observation_if_false": "Identified Ξ is dense, residual is comparable to a full nonlinear map, and rollout error matches the black box, indicating the chosen library is inadequate and sparsity is not the bottleneck.",
+        "risks": [
+          "Library selection is itself a modeling choice; an inadequate library will mask the mechanism.",
+          "Sparse identification is sensitive to noise and threshold choice; misleading sparsity can occur.",
+          "Closure residual may absorb all dynamics if trained without constraints, defeating the sparsity mechanism."
+        ],
+        "relation_to_existing_methods": "Related to SINDy, gray-box modeling, and equation discovery; differs from neural-only latent ROMs (no symbolic skeleton) and from delay-embedding ROMs (no exogenous closure). Distinct from C001_H03 which separated scales but did not require sparse symbolic identifiability.",
+        "novelty_status": "verification_incomplete",
+        "proposed_id": "H3",
+        "generation_cycle": 2,
+        "generation_source": "llm"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C002_H03",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C002_H03 | Sparse symbolic identification with learned closure residual\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n\n[AlgorithmAgent] Selected hypothesis:\nSparse symbolic identification with learned closure residual\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract validation failed:\n  检测到对 final-test 数据的实际访问。\n禁止的位置：\n  - representation.normalization\n\n候选算法只能使用 development_train 和 development_validation。\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 148, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 108, in main\n    print(\n    ~~~~~^\n        json.dumps(\n        ^^^^^^^^^^^\n    ...<4 lines>...\n        )\n        ^\n    )\n    ^\nUnicodeEncodeError: 'gbk' codec can't encode character '\\u2212' in position 1601: illegal multibyte sequence\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": false,
+          "script": "run_algorithm.py",
+          "returncode": 1,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C002_H03 | Sparse symbolic identification with learned closure residual\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n\n[AlgorithmAgent] Selected hypothesis:\nSparse symbolic identification with learned closure residual\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract validation failed:\n  检测到对 final-test 数据的实际访问。\n禁止的位置：\n  - representation.normalization\n\n候选算法只能使用 development_train 和 development_validation。\n",
+          "stderr": "Traceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 148, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 108, in main\n    print(\n    ~~~~~^\n        json.dumps(\n        ^^^^^^^^^^^\n    ...<4 lines>...\n        )\n        ^\n    )\n    ^\nUnicodeEncodeError: 'gbk' codec can't encode character '\\u2212' in position 1601: illegal multibyte sequence\n"
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_002_C002_H03"
+    }
+  ]
+}

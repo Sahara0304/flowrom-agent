@@ -1,0 +1,240 @@
+{
+  "cycle": 9,
+  "research": {
+    "research_cycle": 9,
+    "strategy": {
+      "mode": "parallel_exploration",
+      "reason": "All 18 prior hypotheses (BOOTSTRAP through cycle 8) failed for purely infrastructural reasons: missing run()-signature arguments, missing 'ContractValidationError' import, 'CodeAgent' lacking a 'run' attribute, stale-artifact refusal, smoke-test shape mismatches, Unicode codec errors, or 'not_implementable' verdicts because they required unsupported dynamics types (nonlinear_lifting, stochastic_sde) or unsupported inputs (runner_explicit_history_input, velocity_components). No scientific evidence is yet available against any idea, so we deliberately do not retry prior ideas. We instead introduce three mechanisms that have not appeared in the history: (a) a state-conditioned mixture-of-experts linear operator (different from C002_H02's exogenous-parameter conditioning and BOOTSTRAP_H1's regime labels because the gating is computed endogenously from z_t), (b) a continuously state-dependent operator interpolated by a learned radial-basis partition of unity (a different mechanism from gating: continuous rather than discrete, and from a single fixed A because A literally varies with z), and (c) a structured sparse quadratic-bilinear coupling layer on top of a linear core (a different functional form from C002_H03's generic sparse symbolic regression and from C008_H01's normalizing-flow warping, because the nonlinearity is a fixed-rank quadratic form motivated by the convective term of Navier–Stokes). All three are compatible with the current supported dynamics types (autoregressive, residual_operator) and the 52D POD latent contract with required_history=0, so they avoid the previous 'not_implementable' verdict. They are designed to be discriminative: each predicts a quantitative signature (gating entropy distribution; operator-variation magnitude; quadratic-coefficient significance) that differs from a single global linear operator baseline."
+    },
+    "hypotheses": [
+      {
+        "id": "H1",
+        "name": "Endogenous mixture-of-experts latent operator with state-conditioned softmax gating",
+        "scientific_question": "Is the 52D latent dynamics better represented as a small set of locally linear operators whose mixture weights are computed endogenously from the state z_t, rather than as a single global linear operator or an exogenous-parameter-conditioned family?",
+        "mechanism": "Replace a single global matrix A by K expert matrices {A_k, b_k}_{k=1}^K and a softmax gating network g_phi(z) = softmax(W_g z / tau). The one-step map is the gate-weighted mixture of linear experts, evaluated as an explicit sum (not a hard switch) so the operator is differentiable. The mechanism is genuinely different from C002_H02 (exogenous-parameter-conditioned local Koopman) and BOOTSTRAP_H1 (regime-dependent family) because the conditioning signal is the latent state itself rather than an external parameter or pre-computed regime label, and it differs from all previous 'global + residual' attempts because the operator itself, not an additive correction, is state-dependent.",
+        "mathematical_form": "z_{t+1} = sum_{k=1}^{K} g_k(z_t) (A_k z_t + b_k), with g_k(z) = exp((w_k^T z + c_k)/tau) / sum_j exp((w_j^T z + c_j)/tau), tau is a learnable temperature, K in {2,4,8} as a hyperparameter. Compatible with dynamics_type='autoregressive' or 'residual_operator' (decompose A_k = A_0 + Delta A_k and absorb A_0 into the residual_operator baseline).",
+        "motivation": "Many reduced-order models fail with a single linear operator precisely because the effective dynamics is locally linear but the local operators differ across regions of the attractor. A small number of linear experts with smooth gating is the minimal mechanism that can express this and is testable with the current contract.",
+        "explanation_of_previous_failure": "This is not a retried linear operator with a different regularizer or cluster count. C002_H02 conditioned the operator on an exogenous scalar; BOOTSTRAP_H1 conditioned on a pre-assigned regime label; C001_H01 used a delay embedding; C001_H02 imposed a divergence-free constraint; C001_H03 / C003_H02 / C003_H03 all used a single linear operator with structured sparsity. None made the operator itself an endogenous, differentiable, continuously weighted mixture of multiple linear maps. C008_H01 ('not_implementable') tried a different kind of state-dependence (invertible coordinate warping) but was blocked by the contract; H1 stays inside the supported dynamics types.",
+        "distinguishing_prediction": "If true, the per-state gating entropy H(g(z_t)) is non-trivially distributed (not all mass on one expert), experts disagree on the action of a randomly chosen test vector (||A_i - A_j||_F / ||A_0||_F above a noise floor), and removing the gating (collapsing K=1) significantly worsens one-step and rollout error on development_validation relative to keeping the same total parameter count in a single global A.",
+        "minimum_experiment": [
+          "Implement CandidateModel with K in {1, 2, 4, 8} experts, all sharing latent_dim=52, using a residual_operator decomposition that includes the A_0 + sum_k g_k Delta A_k term.",
+          "Train on development_train only; never read final-test data; compute all normalization statistics from development_train.",
+          "Evaluate on development_validation: one-step NMSE, rollout NMSE at horizons 1, 5, 20, 50, plus gate-entropy histogram and pairwise expert-disagreement metric ||A_i - A_j||_F.",
+          "Compare against a single linear operator baseline with matched parameter count to control for capacity.",
+          "Run with at least 3 random seeds to assess stability of the gating distribution."
+        ],
+        "expected_observation_if_true": "Gating entropy varies across the validation set (bimodal or multi-modal histogram rather than peaked at 0 or log K); experts specialize to visibly different regions when projected via PCA of z; one-step NMSE is at least modestly lower than the matched-capacity linear baseline and the improvement grows with rollout horizon (because local error compounds).",
+        "expected_observation_if_false": "Gating collapses to a single expert (entropy near 0) regardless of K; experts become indistinguishable up to permutation; the matched-capacity linear baseline matches or beats the MoE model on one-step and rollout error. In that case, the latent dynamics is effectively a single global linear map, falsifying both H1 and H2.",
+        "risks": [
+          "Gating collapse to a single expert (mitigated by a load-balancing regularizer on gate usage, reported but kept small so the hypothesis is not auto-rescued).",
+          "Extra parameters over-fitting (mitigated by matched-capacity baseline and by rollout-horizon generalization, not only one-step fit).",
+          "K choice becomes a hyperparameter sweep; the hypothesis is evaluated at the best K, but the matched linear baseline is also tuned, and the comparison is reported."
+        ],
+        "relation_to_existing_methods": "Mixture-of-experts / locally linear models (Jacobs et al. 1991; Tresp 2001; local linear regression). Locally linear embeddings and RWKV-style time-varying linear recurrences are conceptual neighbours but have not been applied in this contract. In ROM literature, this is closest in spirit to piecewise-linear reduced models, but the gating here is endogenously learned and continuous.",
+        "novelty_status": "verification_incomplete"
+      },
+      {
+        "id": "H2",
+        "name": "Continuously state-dependent operator interpolation via learned radial-basis partition of unity",
+        "scientific_question": "Is the effective one-step linear operator A(z) a smooth, non-trivial function of the latent state z, in a way that cannot be captured by a single fixed matrix A but also does not require a discrete gating switch?",
+        "mechanism": "Parametrize A(z) = A_0 + sum_{m=1}^{M} w_m(z) Delta A_m, where {c_m, sigma_m} are learned anchor centres and bandwidths, w_m(z) = exp(-||z - c_m||^2 / (2 sigma_m^2)) / sum_{m'} exp(-||z - c_{m'}||^2 / (2 sigma_{m'}^2)) is a partition of unity (so the operator is a convex combination of Delta A_m plus the base A_0). This is fundamentally different from H1 because the conditioning is continuous and smooth (no softmax over a discrete set of experts with a learned temperature); it is also different from all prior linear-operator hypotheses because the operator literally varies with z rather than being fixed or additively corrected.",
+        "mathematical_form": "z_{t+1} = A(z_t) z_t + b(z_t), A(z) = A_0 + sum_{m=1}^{M} w_m(z) Delta A_m, b(z) = b_0 + sum_{m=1}^{M} w_m(z) delta b_m, w_m(z) = exp(-||z - c_m||^2 / (2 sigma_m^2)) / Z(z), M in {4, 8, 16}. Implementable as dynamics_type='residual_operator' with the residual R(z) = (sum_m w_m(z) Delta A_m) z + sum_m w_m(z) delta b_m. Centres c_m are initialized by k-means on development_train z only; bandwidths sigma_m are learned with a positivity constraint.",
+        "motivation": "If H1 fails because gating collapses or because the operator variation is genuinely smooth, the next most parsimonious mechanism is a smoothly state-varying linear operator. The partition-of-unity form is mathematically clean (always evaluates to a valid operator, no gating pathology) and is a known tool for constructing smooth charts on manifolds, which we are testing as a hypothesis about latent geometry.",
+        "explanation_of_previous_failure": "This is not a retried linear operator with a different number of clusters: H2 does not cluster the data, it learns anchor points and bandwidths jointly with the operator deltas, and the combination is continuous. It differs from C002_H02 (exogenous Koopman) and BOOTSTRAP_H1 because the operator depends on z, not on an external parameter. It differs from C001_H02 (divergence-free constraint) because it does not impose a global conservation property; it differs from C001_H03 (slow/fast additive split) because the variation is in the linear operator itself, not in an additive fast-correction term. It is also distinct from H1 (discrete MoE) in that the operator is a smooth interpolation, not a hard or soft selection.",
+        "distinguishing_prediction": "If true, the operator-variation metric V = E_z[ ||A(z) - A_0||_F / ||A_0||_F ] is bounded away from zero on development_validation (e.g., 0.05 or more) and varies smoothly along trajectories; freezing the learned Delta A_m to zero degrades validation error, and principal-component analysis of the flattened Delta A_m shows a low-dimensional manifold of operator variation rather than isotropic noise.",
+        "minimum_experiment": [
+          "Implement CandidateModel with M in {4, 8, 16} RBF anchors, all sharing latent_dim=52, dynamics_type='residual_operator' with Delta A_m, delta b_m, c_m, sigma_m all initialized from development_train only.",
+          "Train on development_train; evaluate on development_validation; one-step NMSE, rollout NMSE at horizons 1, 5, 20, 50.",
+          "Report the operator-variation metric V on development_validation and a PCA spectrum of the stacked Delta A_m to check that the variation is low-rank structured rather than noise.",
+          "Compare against (a) the same model with Delta A_m frozen to zero (ablation = single global linear) and (b) H1 with matched total parameter count, to separate continuous interpolation from discrete gating."
+        ],
+        "expected_observation_if_true": "V is non-trivial (>0.05) and rollout error at horizon 50 is meaningfully lower than the frozen-Delta ablation; PCA of Delta A_m has a steep spectrum (top few components dominate), indicating a low-dimensional operator manifold. The smooth model and H1's MoE make correlated but distinct predictions: H2 should win when the operator variation is smooth, H1 when the latent space decomposes into a small number of well-separated regimes.",
+        "expected_observation_if_false": "V is statistically indistinguishable from zero (Delta A_m collapse or are unlearnable); the frozen-Delta ablation matches the full model; PCA of Delta A_m is flat-spectrum noise. In that case, the latent dynamics is not meaningfully state-dependent, and both H1 and H2 are jointly falsified.",
+        "risks": [
+          "Anchor collapse to a single location (mitigated by the partition-of-unity normalization and a small repulsion regularizer, reported as a diagnostic).",
+          "Overfitting because Delta A_m adds M x 52 x 52 parameters; mitigated by rollout-horizon evaluation and a matched-capacity linear baseline.",
+          "H2 and H1 are not mutually exclusive; the experiment must report both to allow joint discrimination."
+        ],
+        "relation_to_existing_methods": "Locally weighted regression, radial basis function networks, mixture density networks, and time-varying linear systems. In ROM, this is related to local POD / piecewise-affine ROM but with a continuous, learned partition of unity rather than a hard partition.",
+        "novelty_status": "verification_incomplete"
+      },
+      {
+        "id": "H3",
+        "name": "Structured sparse quadratic-bilinear coupling on top of a linear latent core",
+        "scientific_question": "Does the residual beyond a single linear operator in the 52D latent dynamics have a structured, low-rank, quadratic (bilinear) component of the kind produced by the convective term of the Navier–Stokes equations, rather than being unstructured noise or a generic nonlinear lift?",
+        "mechanism": "Decompose the one-step map into a linear core plus a structured quadratic-bilinear coupling layer: z_{t+1} = A z_t + b + Q(z_t), where Q is a sparse sum of pairwise modal interactions Q(z) = sum_{(i,j) in S} B_{ij} z_i z_j with S a learned sparse set of index pairs, |S| << 52*52. This is fundamentally different from the linear-operator family (C001_H01..C003_H03, C008_H03) because it adds a fixed-form nonlinearity motivated by the physics of the underlying PDE; it is different from C002_H03 (sparse symbolic + learned residual) because the functional form is fixed to a sparse bilinear coupling, not generic symbolic regression; it is different from C008_H01 (Normalizing-Flow Koopman) and H_fallback_lift (low-dim nonlinear lift) because the nonlinearity acts directly on the 52D state through a low-rank quadratic form, not through a learned invertible warp or a low-dimensional bottleneck.",
+        "mathematical_form": "z_{t+1} = A z_t + b + Q(z_t), Q(z) = (W z) * (V z) where W, V in R^{52 x r} are low-rank factors (r in {4, 8, 16}); equivalently Q(z)_k = sum_{a=1}^{r} W_{k,a} (sum_i V_{a,i} z_i) * z_k for the 'outer-product' form, or Q(z) = sum_{a=1}^{r} (W_a . z) (V_a . z) e_{index(a)} for a sparse hub form. A structured-sparsity penalty (group Lasso on rows of W or on the entries of V) controls the number of active interactions. Dynamics_type='residual_operator' with Q(z) as the residual term.",
+        "motivation": "The projection of the Navier–Stokes convective term u . grad u onto a POD basis produces exactly a quadratic-bilinear coupling between modes, with the well-known structure that the coupling is rank-deficient in the modal energy ordering. A 52D POD latent state is exactly the regime in which this quadratic structure is expected to be detectable and physically meaningful, and a sparse low-rank quadratic form is a clean, low-parameter, physically motivated functional form to test against a single linear A.",
+        "explanation_of_previous_failure": "No prior hypothesis in this project explicitly tested a sparse quadratic-bilinear term on top of a linear core at fixed POD latent dimension 52. C002_H03 used generic sparse symbolic regression (free-form library search), not a structured quadratic coupling; C001_H01 used delay coordinates (memory, not quadratic coupling); C008_H01 used a normalizing flow (coordinate warp, not bilinear); H_fallback_lift used a low-dimensional nonlinear bottleneck (different mechanism, and it failed a smoke test on rollout shape, not on the mechanism itself). H3 is also implementable under the current contract (residual_operator with required_history=0), unlike C008_H01/H02 which were 'not_implementable'.",
+        "distinguishing_prediction": "If true, the quadratic term Q contributes a non-trivial fraction of the explained one-step variance (e.g., 10% or more of the reduction in one-step NMSE beyond the linear A); cross-validated forward-selection of W, V selects the same low-rank quadratic terms across random seeds (reproducible bilinear modes); ablating Q (setting W=V=0) significantly worsens rollout error at horizon >=20. The bilinear modes should also correlate with the known energy-transfer pathways of the underlying flow (e.g., dominant interaction involving the leading low-index modes).",
+        "minimum_experiment": [
+          "Implement CandidateModel with linear core A, b plus quadratic-bilinear residual Q with rank r in {4, 8, 16} and structured-sparsity penalty on W, V.",
+          "Train on development_train; all normalization from development_train only; never read final-test data.",
+          "Evaluate on development_validation: one-step NMSE, rollout NMSE at horizons 1, 5, 20, 50, fraction of error reduction attributable to Q (defined as (NMSE_linear - NMSE_full) / NMSE_linear).",
+          "Compare against (a) the linear core alone (A, b only), (b) a residual with the same number of parameters as Q but distributed as a generic MLP nonlinearity (matched-capacity control), and (c) H1, H2 if they run.",
+          "Across at least 3 seeds, report the overlap of the top-k bilinear modes selected by the structured-sparsity penalty."
+        ],
+        "expected_observation_if_true": "Q contributes a measurable, reproducible improvement at rollout horizons >=20; the top bilinear modes are consistent across seeds (overlap > 0.5 on top 10 pairs); the matched-capacity generic-MLP residual performs worse than the structured quadratic form, supporting that the specific bilinear structure, not just extra parameters, is doing the work.",
+        "expected_observation_if_false": "Setting Q=0 does not change validation error within noise; the generic-MLP residual matches or beats the structured quadratic form; bilinear modes are inconsistent across seeds (overlap near chance). In that case, the residual beyond a single linear operator is either negligible (single linear suffices) or unstructured (favouring neither H1 nor H3 in their quadratic form).",
+        "risks": [
+          "Quadratic term dominates training and destabilizes the linear core; mitigated by warm-starting from the linear A solution and a small initial scale on W, V.",
+          "Structured-sparsity penalty is too strong (collapses Q) or too weak (Q overfits); sweep is reported, hypothesis is evaluated at the best setting, and the matched-capacity generic-MLP control disambiguates.",
+          "H3 is a different functional class from H1 and H2, not a refinement: H3 makes the linear core itself valid but adds a structured nonlinear term, whereas H1/H2 make the linear operator state-dependent. The experiment must report all three to separate these explanations."
+        ],
+        "relation_to_existing_methods": "Quadratic-bilinear reduced-order models (Benner, Goyal, Kramer; Ballarin et al.; the Loewner framework); sparse identification of nonlinear dynamics (SINDy, Brunton et al.) restricted to a sparse bilinear library; structured low-rank quadratic neural network layers.",
+        "novelty_status": "verification_incomplete"
+      }
+    ],
+    "artifact": "D:\\Projects\\flowrom-agent\\research\\discovery_cycles\\cycle_009.json",
+    "literature_count": 0,
+    "generation_source": "llm"
+  },
+  "candidates": [
+    {
+      "hypothesis": {
+        "id": "H1",
+        "name": "Endogenous mixture-of-experts latent operator with state-conditioned softmax gating",
+        "scientific_question": "Is the 52D latent dynamics better represented as a small set of locally linear operators whose mixture weights are computed endogenously from the state z_t, rather than as a single global linear operator or an exogenous-parameter-conditioned family?",
+        "mechanism": "Replace a single global matrix A by K expert matrices {A_k, b_k}_{k=1}^K and a softmax gating network g_phi(z) = softmax(W_g z / tau). The one-step map is the gate-weighted mixture of linear experts, evaluated as an explicit sum (not a hard switch) so the operator is differentiable. The mechanism is genuinely different from C002_H02 (exogenous-parameter-conditioned local Koopman) and BOOTSTRAP_H1 (regime-dependent family) because the conditioning signal is the latent state itself rather than an external parameter or pre-computed regime label, and it differs from all previous 'global + residual' attempts because the operator itself, not an additive correction, is state-dependent.",
+        "mathematical_form": "z_{t+1} = sum_{k=1}^{K} g_k(z_t) (A_k z_t + b_k), with g_k(z) = exp((w_k^T z + c_k)/tau) / sum_j exp((w_j^T z + c_j)/tau), tau is a learnable temperature, K in {2,4,8} as a hyperparameter. Compatible with dynamics_type='autoregressive' or 'residual_operator' (decompose A_k = A_0 + Delta A_k and absorb A_0 into the residual_operator baseline).",
+        "motivation": "Many reduced-order models fail with a single linear operator precisely because the effective dynamics is locally linear but the local operators differ across regions of the attractor. A small number of linear experts with smooth gating is the minimal mechanism that can express this and is testable with the current contract.",
+        "explanation_of_previous_failure": "This is not a retried linear operator with a different regularizer or cluster count. C002_H02 conditioned the operator on an exogenous scalar; BOOTSTRAP_H1 conditioned on a pre-assigned regime label; C001_H01 used a delay embedding; C001_H02 imposed a divergence-free constraint; C001_H03 / C003_H02 / C003_H03 all used a single linear operator with structured sparsity. None made the operator itself an endogenous, differentiable, continuously weighted mixture of multiple linear maps. C008_H01 ('not_implementable') tried a different kind of state-dependence (invertible coordinate warping) but was blocked by the contract; H1 stays inside the supported dynamics types.",
+        "distinguishing_prediction": "If true, the per-state gating entropy H(g(z_t)) is non-trivially distributed (not all mass on one expert), experts disagree on the action of a randomly chosen test vector (||A_i - A_j||_F / ||A_0||_F above a noise floor), and removing the gating (collapsing K=1) significantly worsens one-step and rollout error on development_validation relative to keeping the same total parameter count in a single global A.",
+        "minimum_experiment": [
+          "Implement CandidateModel with K in {1, 2, 4, 8} experts, all sharing latent_dim=52, using a residual_operator decomposition that includes the A_0 + sum_k g_k Delta A_k term.",
+          "Train on development_train only; never read final-test data; compute all normalization statistics from development_train.",
+          "Evaluate on development_validation: one-step NMSE, rollout NMSE at horizons 1, 5, 20, 50, plus gate-entropy histogram and pairwise expert-disagreement metric ||A_i - A_j||_F.",
+          "Compare against a single linear operator baseline with matched parameter count to control for capacity.",
+          "Run with at least 3 random seeds to assess stability of the gating distribution."
+        ],
+        "expected_observation_if_true": "Gating entropy varies across the validation set (bimodal or multi-modal histogram rather than peaked at 0 or log K); experts specialize to visibly different regions when projected via PCA of z; one-step NMSE is at least modestly lower than the matched-capacity linear baseline and the improvement grows with rollout horizon (because local error compounds).",
+        "expected_observation_if_false": "Gating collapses to a single expert (entropy near 0) regardless of K; experts become indistinguishable up to permutation; the matched-capacity linear baseline matches or beats the MoE model on one-step and rollout error. In that case, the latent dynamics is effectively a single global linear map, falsifying both H1 and H2.",
+        "risks": [
+          "Gating collapse to a single expert (mitigated by a load-balancing regularizer on gate usage, reported but kept small so the hypothesis is not auto-rescued).",
+          "Extra parameters over-fitting (mitigated by matched-capacity baseline and by rollout-horizon generalization, not only one-step fit).",
+          "K choice becomes a hyperparameter sweep; the hypothesis is evaluated at the best K, but the matched linear baseline is also tuned, and the comparison is reported."
+        ],
+        "relation_to_existing_methods": "Mixture-of-experts / locally linear models (Jacobs et al. 1991; Tresp 2001; local linear regression). Locally linear embeddings and RWKV-style time-varying linear recurrences are conceptual neighbours but have not been applied in this contract. In ROM literature, this is closest in spirit to piecewise-linear reduced models, but the gating here is endogenously learned and continuous.",
+        "novelty_status": "verification_incomplete"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H1",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "algorithm_result.json belongs to a different hypothesis; refusing to continue with stale artifacts.",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: H1 | Endogenous mixture-of-experts latent operator with state-conditioned softmax gating\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n[AlgorithmAgent] Selected hypothesis:\nEndogenous mixture-of-experts latent operator with state-conditioned softmax gating\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 200\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Candidate is scientifically expressible but not executable under the current pipeline.\n  - exogenous_parameter\n  - runner_explicit_history_input\n{\n  \"status\": \"not_implementable\",\n  \"candidate_id\": \"H1_MoE_state_gated\",\n  \"name\": \"Endogenous mixture-of-experts latent operator with state-conditioned softmax gating\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [\n    \"Candidate requires capabilities unavailable in the current runner: exogenous_parameter, runner_explicit_history_input\"\n  ],\n  \"missing_inputs\": [\n    \"exogenous_parameter\",\n    \"runner_explicit_history_input\"\n  ],\n  \"implementability\": {\n    \"current_pipeline_compatible\": false,\n    \"missing_inputs\": [\n      \"exogenous_parameter\",\n      \"runner_explicit_history_input\"\n    ],\n    \"required_history\": 1,\n    \"required_representation\": \"POD_latent\",\n    \"required_latent_dimension\": 52,\n    \"dynamics_type\": \"residual_operator\",\n    \"supported_dynamics\": [\n      \"global_linear\",\n      \"linear_operator\",\n      \"residual_operator\",\n      \"shrinkage_linear_operator\"\n    ],\n    \"experiment_type\": \"predictive_model\",\n    \"analysis_type\": \"none\",\n    \"supported_experiment_types\": [\n      \"diagnostic_analysis\",\n      \"predictive_model\"\n    ],\n    \"supported_analyses\": [\n      \"operator_decomposition\"\n    ]\n  },\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_009_H1"
+    },
+    {
+      "hypothesis": {
+        "id": "H2",
+        "name": "Continuously state-dependent operator interpolation via learned radial-basis partition of unity",
+        "scientific_question": "Is the effective one-step linear operator A(z) a smooth, non-trivial function of the latent state z, in a way that cannot be captured by a single fixed matrix A but also does not require a discrete gating switch?",
+        "mechanism": "Parametrize A(z) = A_0 + sum_{m=1}^{M} w_m(z) Delta A_m, where {c_m, sigma_m} are learned anchor centres and bandwidths, w_m(z) = exp(-||z - c_m||^2 / (2 sigma_m^2)) / sum_{m'} exp(-||z - c_{m'}||^2 / (2 sigma_{m'}^2)) is a partition of unity (so the operator is a convex combination of Delta A_m plus the base A_0). This is fundamentally different from H1 because the conditioning is continuous and smooth (no softmax over a discrete set of experts with a learned temperature); it is also different from all prior linear-operator hypotheses because the operator literally varies with z rather than being fixed or additively corrected.",
+        "mathematical_form": "z_{t+1} = A(z_t) z_t + b(z_t), A(z) = A_0 + sum_{m=1}^{M} w_m(z) Delta A_m, b(z) = b_0 + sum_{m=1}^{M} w_m(z) delta b_m, w_m(z) = exp(-||z - c_m||^2 / (2 sigma_m^2)) / Z(z), M in {4, 8, 16}. Implementable as dynamics_type='residual_operator' with the residual R(z) = (sum_m w_m(z) Delta A_m) z + sum_m w_m(z) delta b_m. Centres c_m are initialized by k-means on development_train z only; bandwidths sigma_m are learned with a positivity constraint.",
+        "motivation": "If H1 fails because gating collapses or because the operator variation is genuinely smooth, the next most parsimonious mechanism is a smoothly state-varying linear operator. The partition-of-unity form is mathematically clean (always evaluates to a valid operator, no gating pathology) and is a known tool for constructing smooth charts on manifolds, which we are testing as a hypothesis about latent geometry.",
+        "explanation_of_previous_failure": "This is not a retried linear operator with a different number of clusters: H2 does not cluster the data, it learns anchor points and bandwidths jointly with the operator deltas, and the combination is continuous. It differs from C002_H02 (exogenous Koopman) and BOOTSTRAP_H1 because the operator depends on z, not on an external parameter. It differs from C001_H02 (divergence-free constraint) because it does not impose a global conservation property; it differs from C001_H03 (slow/fast additive split) because the variation is in the linear operator itself, not in an additive fast-correction term. It is also distinct from H1 (discrete MoE) in that the operator is a smooth interpolation, not a hard or soft selection.",
+        "distinguishing_prediction": "If true, the operator-variation metric V = E_z[ ||A(z) - A_0||_F / ||A_0||_F ] is bounded away from zero on development_validation (e.g., 0.05 or more) and varies smoothly along trajectories; freezing the learned Delta A_m to zero degrades validation error, and principal-component analysis of the flattened Delta A_m shows a low-dimensional manifold of operator variation rather than isotropic noise.",
+        "minimum_experiment": [
+          "Implement CandidateModel with M in {4, 8, 16} RBF anchors, all sharing latent_dim=52, dynamics_type='residual_operator' with Delta A_m, delta b_m, c_m, sigma_m all initialized from development_train only.",
+          "Train on development_train; evaluate on development_validation; one-step NMSE, rollout NMSE at horizons 1, 5, 20, 50.",
+          "Report the operator-variation metric V on development_validation and a PCA spectrum of the stacked Delta A_m to check that the variation is low-rank structured rather than noise.",
+          "Compare against (a) the same model with Delta A_m frozen to zero (ablation = single global linear) and (b) H1 with matched total parameter count, to separate continuous interpolation from discrete gating."
+        ],
+        "expected_observation_if_true": "V is non-trivial (>0.05) and rollout error at horizon 50 is meaningfully lower than the frozen-Delta ablation; PCA of Delta A_m has a steep spectrum (top few components dominate), indicating a low-dimensional operator manifold. The smooth model and H1's MoE make correlated but distinct predictions: H2 should win when the operator variation is smooth, H1 when the latent space decomposes into a small number of well-separated regimes.",
+        "expected_observation_if_false": "V is statistically indistinguishable from zero (Delta A_m collapse or are unlearnable); the frozen-Delta ablation matches the full model; PCA of Delta A_m is flat-spectrum noise. In that case, the latent dynamics is not meaningfully state-dependent, and both H1 and H2 are jointly falsified.",
+        "risks": [
+          "Anchor collapse to a single location (mitigated by the partition-of-unity normalization and a small repulsion regularizer, reported as a diagnostic).",
+          "Overfitting because Delta A_m adds M x 52 x 52 parameters; mitigated by rollout-horizon evaluation and a matched-capacity linear baseline.",
+          "H2 and H1 are not mutually exclusive; the experiment must report both to allow joint discrimination."
+        ],
+        "relation_to_existing_methods": "Locally weighted regression, radial basis function networks, mixture density networks, and time-varying linear systems. In ROM, this is related to local POD / piecewise-affine ROM but with a continuous, learned partition of unity rather than a hard partition.",
+        "novelty_status": "verification_incomplete"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H2",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "algorithm_result.json belongs to a different hypothesis; refusing to continue with stale artifacts.",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: H2 | Continuously state-dependent operator interpolation via learned radial-basis partition of unity\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n[AlgorithmAgent] Selected hypothesis:\nContinuously state-dependent operator interpolation via learned radial-basis partition of unity\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 200\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract accepted.\n[AlgorithmAgent] Candidate: Continuously state-dependent operator interpolation via learned radial-basis partition of unity\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C009_H2\",\n  \"name\": \"Continuously state-dependent operator interpolation via learned radial-basis partition of unity\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [],\n  \"implementability\": {\n    \"current_pipeline_compatible\": true,\n    \"missing_inputs\": [],\n    \"required_history\": 0,\n    \"required_representation\": \"POD_latent\",\n    \"required_latent_dimension\": 52,\n    \"dynamics_type\": \"residual_operator\",\n    \"supported_dynamics\": [\n      \"global_linear\",\n      \"linear_operator\",\n      \"residual_operator\",\n      \"shrinkage_linear_operator\"\n    ],\n    \"experiment_type\": \"predictive_model\",\n    \"analysis_type\": \"none\",\n    \"supported_experiment_types\": [\n      \"diagnostic_analysis\",\n      \"predictive_model\"\n    ],\n    \"supported_analyses\": [\n      \"operator_decomposition\"\n    ]\n  },\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_009_H2"
+    },
+    {
+      "hypothesis": {
+        "id": "H3",
+        "name": "Structured sparse quadratic-bilinear coupling on top of a linear latent core",
+        "scientific_question": "Does the residual beyond a single linear operator in the 52D latent dynamics have a structured, low-rank, quadratic (bilinear) component of the kind produced by the convective term of the Navier–Stokes equations, rather than being unstructured noise or a generic nonlinear lift?",
+        "mechanism": "Decompose the one-step map into a linear core plus a structured quadratic-bilinear coupling layer: z_{t+1} = A z_t + b + Q(z_t), where Q is a sparse sum of pairwise modal interactions Q(z) = sum_{(i,j) in S} B_{ij} z_i z_j with S a learned sparse set of index pairs, |S| << 52*52. This is fundamentally different from the linear-operator family (C001_H01..C003_H03, C008_H03) because it adds a fixed-form nonlinearity motivated by the physics of the underlying PDE; it is different from C002_H03 (sparse symbolic + learned residual) because the functional form is fixed to a sparse bilinear coupling, not generic symbolic regression; it is different from C008_H01 (Normalizing-Flow Koopman) and H_fallback_lift (low-dim nonlinear lift) because the nonlinearity acts directly on the 52D state through a low-rank quadratic form, not through a learned invertible warp or a low-dimensional bottleneck.",
+        "mathematical_form": "z_{t+1} = A z_t + b + Q(z_t), Q(z) = (W z) * (V z) where W, V in R^{52 x r} are low-rank factors (r in {4, 8, 16}); equivalently Q(z)_k = sum_{a=1}^{r} W_{k,a} (sum_i V_{a,i} z_i) * z_k for the 'outer-product' form, or Q(z) = sum_{a=1}^{r} (W_a . z) (V_a . z) e_{index(a)} for a sparse hub form. A structured-sparsity penalty (group Lasso on rows of W or on the entries of V) controls the number of active interactions. Dynamics_type='residual_operator' with Q(z) as the residual term.",
+        "motivation": "The projection of the Navier–Stokes convective term u . grad u onto a POD basis produces exactly a quadratic-bilinear coupling between modes, with the well-known structure that the coupling is rank-deficient in the modal energy ordering. A 52D POD latent state is exactly the regime in which this quadratic structure is expected to be detectable and physically meaningful, and a sparse low-rank quadratic form is a clean, low-parameter, physically motivated functional form to test against a single linear A.",
+        "explanation_of_previous_failure": "No prior hypothesis in this project explicitly tested a sparse quadratic-bilinear term on top of a linear core at fixed POD latent dimension 52. C002_H03 used generic sparse symbolic regression (free-form library search), not a structured quadratic coupling; C001_H01 used delay coordinates (memory, not quadratic coupling); C008_H01 used a normalizing flow (coordinate warp, not bilinear); H_fallback_lift used a low-dimensional nonlinear bottleneck (different mechanism, and it failed a smoke test on rollout shape, not on the mechanism itself). H3 is also implementable under the current contract (residual_operator with required_history=0), unlike C008_H01/H02 which were 'not_implementable'.",
+        "distinguishing_prediction": "If true, the quadratic term Q contributes a non-trivial fraction of the explained one-step variance (e.g., 10% or more of the reduction in one-step NMSE beyond the linear A); cross-validated forward-selection of W, V selects the same low-rank quadratic terms across random seeds (reproducible bilinear modes); ablating Q (setting W=V=0) significantly worsens rollout error at horizon >=20. The bilinear modes should also correlate with the known energy-transfer pathways of the underlying flow (e.g., dominant interaction involving the leading low-index modes).",
+        "minimum_experiment": [
+          "Implement CandidateModel with linear core A, b plus quadratic-bilinear residual Q with rank r in {4, 8, 16} and structured-sparsity penalty on W, V.",
+          "Train on development_train; all normalization from development_train only; never read final-test data.",
+          "Evaluate on development_validation: one-step NMSE, rollout NMSE at horizons 1, 5, 20, 50, fraction of error reduction attributable to Q (defined as (NMSE_linear - NMSE_full) / NMSE_linear).",
+          "Compare against (a) the linear core alone (A, b only), (b) a residual with the same number of parameters as Q but distributed as a generic MLP nonlinearity (matched-capacity control), and (c) H1, H2 if they run.",
+          "Across at least 3 seeds, report the overlap of the top-k bilinear modes selected by the structured-sparsity penalty."
+        ],
+        "expected_observation_if_true": "Q contributes a measurable, reproducible improvement at rollout horizons >=20; the top bilinear modes are consistent across seeds (overlap > 0.5 on top 10 pairs); the matched-capacity generic-MLP residual performs worse than the structured quadratic form, supporting that the specific bilinear structure, not just extra parameters, is doing the work.",
+        "expected_observation_if_false": "Setting Q=0 does not change validation error within noise; the generic-MLP residual matches or beats the structured quadratic form; bilinear modes are inconsistent across seeds (overlap near chance). In that case, the residual beyond a single linear operator is either negligible (single linear suffices) or unstructured (favouring neither H1 nor H3 in their quadratic form).",
+        "risks": [
+          "Quadratic term dominates training and destabilizes the linear core; mitigated by warm-starting from the linear A solution and a small initial scale on W, V.",
+          "Structured-sparsity penalty is too strong (collapses Q) or too weak (Q overfits); sweep is reported, hypothesis is evaluated at the best setting, and the matched-capacity generic-MLP control disambiguates.",
+          "H3 is a different functional class from H1 and H2, not a refinement: H3 makes the linear core itself valid but adds a structured nonlinear term, whereas H1/H2 make the linear operator state-dependent. The experiment must report all three to separate these explanations."
+        ],
+        "relation_to_existing_methods": "Quadratic-bilinear reduced-order models (Benner, Goyal, Kramer; Ballarin et al.; the Loewner framework); sparse identification of nonlinear dynamics (SINDy, Brunton et al.) restricted to a sparse bilinear library; structured low-rank quadratic neural network layers.",
+        "novelty_status": "verification_incomplete"
+      },
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H3",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "algorithm_result.json belongs to a different hypothesis; refusing to continue with stale artifacts.",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "execution_steps": [
+        {
+          "ok": true,
+          "script": "run_algorithm.py",
+          "returncode": 0,
+          "stdout": "======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: H3 | Structured sparse quadratic-bilinear coupling on top of a linear latent core\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n[AlgorithmAgent] Selected hypothesis:\nStructured sparse quadratic-bilinear coupling on top of a linear latent core\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n[MiniMax] POST https://api.minimaxi.com/v1/text/chatcompletion_v2 (attempt 1/3)\n[MiniMax] HTTP 200\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract accepted.\n[AlgorithmAgent] Candidate: Structured sparse quadratic-bilinear coupling on top of a linear latent core\n{\n  \"status\": \"success\",\n  \"candidate_id\": \"C009_H3\",\n  \"name\": \"Structured sparse quadratic-bilinear coupling on top of a linear latent core\",\n  \"hypothesis_source\": \"research_agent\",\n  \"hypothesis_file\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\hypothesis_used.json\",\n  \"contract_path\": \"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\algorithm_spec.json\",\n  \"warnings\": [],\n  \"implementability\": {\n    \"current_pipeline_compatible\": true,\n    \"missing_inputs\": [],\n    \"required_history\": 0,\n    \"required_representation\": \"POD_latent\",\n    \"required_latent_dimension\": 52,\n    \"dynamics_type\": \"residual_operator\",\n    \"supported_dynamics\": [\n      \"global_linear\",\n      \"linear_operator\",\n      \"residual_operator\",\n      \"shrinkage_linear_operator\"\n    ],\n    \"experiment_type\": \"predictive_model\",\n    \"analysis_type\": \"none\",\n    \"supported_experiment_types\": [\n      \"diagnostic_analysis\",\n      \"predictive_model\"\n    ],\n    \"supported_analyses\": [\n      \"operator_decomposition\"\n    ]\n  },\n  \"data_policy\": {\n    \"allowed_split\": [\n      \"development_train\",\n      \"development_validation\"\n    ],\n    \"forbidden_split\": [\n      \"final_test\"\n    ],\n    \"final_test_access\": false\n  }\n}\n",
+          "stderr": ""
+        }
+      ],
+      "archive": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_009_H3"
+    }
+  ]
+}

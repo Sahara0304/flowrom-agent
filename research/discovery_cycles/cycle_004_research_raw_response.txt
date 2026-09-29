@@ -1,0 +1,437 @@
+<think>Let me carefully analyze the context:
+
+**Current situation:**
+- Research cycle 4, FlowROM-Agent
+- All 10 prior experiments (BOOTSTRAP_H1 + 9 hypotheses across C001-C003) failed to produce evaluable scientific claims
+- The failures have been entirely **infrastructural**, not scientific:
+  - C001: `AlgorithmAgent.run() missing 2 required positional arguments`
+  - C002: `latent_dim does not match the approved algorithm contract`
+  - C002_H03: final-test access detected in normalization step, plus GBK UnicodeEncodeError
+  - C003: `ImportError: cannot import name 'ContractValidationError'`
+- No scientific mechanism has been falsified yet
+- BOOTSTRAP_H1 was inconclusive due to output schema incomparability
+
+**Capability profile:**
+- Representation: POD_latent, latent_dim=52
+- Available inputs: latent_state, latent_history only
+- Unavailable: pressure, velocity, divergence, curl, BCs, exogenous params
+- Supported dynamics: linear_operator, autoregressive, delay_coordinate, residual_operator
+- Data policy: development_train + development_validation only; final_test forbidden
+
+**My task:**
+Generate 3 genuinely different, testable, executable hypotheses. They must:
+1. Respect all capability constraints (latent_dim=52, only latent_state/history inputs)
+2. Be development-only
+3. Have falsification criteria
+4. Be different from each other
+5. Not be simple parameter tuning of failed hypotheses
+6. Avoid unavailable inputs
+
+**Analysis of prior hypothesis themes to avoid:**
+- Non-Markovian delay-coordinate operator (C001_H01)
+- Divergence-free latent coordinates (C001_H02) — used unavailable inputs implicitly
+- Multi-scale slow/fast decomposition (C001_H03)
+- Symplectic/energy-preserving reduction (C002_H01)
+- Exogenous-parameter-conditioned Koopman (C002_H02) — used unavailable exogenous params!
+- Sparse symbolic ID with closure residual (C002_H03)
+- Bayesian hierarchical shrinkage linear operator (C003_H01)
+- POD-energy-band sparse linear operator (C003_H02)
+- Energy-decomposed linear core + tail residual (C003_H03)
+
+So none have been scientifically falsified, but I should not repeat the exact same mechanisms. I should also be aware that some of these may have been "too close" — for instance C002_H02 explicitly required exogenous parameters which are unavailable. So even though execution failed infrastructurally, the mechanism was not executable.
+
+**New directions to explore (genuinely different):**
+
+Let me think of three truly different mechanisms:
+
+1. **Lyapunov-spectrum / spectral analysis-based latent dynamics characterization**: Instead of trying to learn an operator, characterize the linear eigen-spectrum of the best-fit operator and test whether the latent dynamics are dominated by a small number of eigenmodes with continuous spectra (indicating quasi-periodic orbits) or have unstable/complex modes (chaos). This is a **diagnostic hypothesis** — it asks whether the latent dynamics have *any* linear-operator representation at all, and characterizes the spectrum. This is genuinely exploratory and falsifiable.
+
+2. **Mutual information / information-theoretic nonlinearity test**: Quantify via the mutual information between latent_state and future latent_state (one-step, multi-step) and compare against the mutual information captured by a fitted linear model. If MI(λ|N_future) > MI(λ|N_linear_pred), then the dynamics have essential nonlinearity. This is a *test of necessity of nonlinearity* — if false, a linear operator could suffice; if true, then nonlinearity is required.
+
+3. **State-dependent AR(p) with regime detection via clustering of latent history**: Use k-means or similar on latent_history windows to define discrete regimes, then fit a linear operator per regime. This is similar to KOOMPAN but uses **internal state** (history clustering) rather than exogenous parameters. Predictions can be evaluated per-cluster. Falsifiable: if prediction errors are similar across clusters, regime-conditioning doesn't help (i.e., there's no detectable regime).
+
+Wait, let me also think about other novel directions:
+
+4. **Jacobian regularization / physics-informed linear operator**: Train a linear operator with a regularization term that encourages the learned eigenvalues to have certain properties (e.g., decay rates close to observed spectral decay of the POD basis itself). This tests whether the latent dynamics inherit POD energy decay structure.
+
+5. **Online / streaming validation via spectral consistency**: Compare the short-time (1-step) error vs. long-time (multi-step rollout) error and whether they grow exponentially or polynomially. If exponential growth rate correlates with operator instability, the linear operator model is insufficient. This tests **stability of the reduced-order model**.
+
+6. **Approximate conjugation to normal form / Schur decomposition test**: Test whether the learned operator can be brought close to a normal matrix via similarity transform — if yes, dynamics are close to integrable; if no, dynamics are inherently non-normal (transient growth).
+
+Actually, I think the most scientifically novel and executable ideas are:
+
+**H1: Linear Koopman spectral characterization (diagnostic)**
+- Fit the best linear operator A via least-squares on latent_state transitions
+- Characterize the eigenvalue spectrum
+- Hypothesis: if dynamics are quasi-periodic, eigenvalues should be on/near the unit circle; if chaotic, eigenvalues should have |λ|>1 components
+- Distinguishing prediction: eigenvalues should cluster on/near unit circle with real-part distribution reflecting expected energy decay from POD
+
+**H2: Nonlinearity necessity test via information-theoretic decomposition**
+- Compute MI between current state and one-step future
+- Compute MI between current state and one-step future given the linear prediction
+- If conditional MI is significant, dynamics contain essential nonlinearity
+- Falsifiable: if linear model captures ≥95% of MI, dynamics are essentially linear
+
+**H3: Internal-history-based regime segmentation + linear operator per regime**
+- Cluster latent history windows into K regimes
+- Fit per-regime linear operators A_k
+- Compare to single linear operator
+- Falsifiable: if per-regime error equals global error, regimes are spurious
+
+Actually let me reconsider. I should make these more **scientifically meaty** and well-motivated. Let me think more carefully.
+
+The key insight from the literature on ROM:
+- POD-based ROMs often fail because nonlinear terms create mode-coupling
+- The "closure problem" is fundamental
+- Linear operators in latent space (DMD, Koopman) are common baselines
+- The dimensionality (52) is moderate — typical for fluid POD modes
+
+So the most interesting and falsifiable scientific questions are:
+
+1. **Are the latent dynamics well-approximated by a single linear operator?** (Baseline falsification)
+2. **Do the latent dynamics contain essential nonlinearity that requires nonlinear closure?**
+3. **Are there discrete regimes in the latent dynamics that could be exploited?**
+
+But these need to be different from already-tried:
+- C001_H01: delay-coordinate (non-Markovian)
+- C001_H02: divergence-free coordinates
+- C001_H03: slow manifold + fast correction
+- C002_H01: symplectic
+- C002_H02: parameter-coherent (not executable)
+- C002_H03: sparse symbolic + closure
+- C003_H01: Bayesian shrinkage linear
+- C003_H02: energy-band sparse linear
+- C003_H03: linear + tail residual
+
+So none of these directly test the *spectral* properties or *information-theoretic* properties. None tests *regime segmentation via clustering*. None tests *nonlinearity quantification*.
+
+Wait, C002_H03 is "Sparse symbolic identification with learned closure residual" — this is similar in spirit to "linear + nonlinear residual" but using sparse symbolic. C003_H03 is also "linear core + tail residual". So those tested the closure/residual idea.
+
+What's genuinely missing:
+1. A purely **diagnostic** hypothesis (no prediction, just characterization)
+2. A **regime-discovery** hypothesis using internal state (exogenous rates tried)
+4. **Non-normality / transient growth** in the linear operator
+
+Let me also consider:
+5. **Sparse observation / compression**: If we only retain the top-K modes (K < 52) by energy, does prediction accuracy scale linearly or superlinearly with K? This tests **Kolmogorov-barrier-like** behavior.
+
+6. **Predictability horizon**: At what horizon does linear prediction diverge from true trajectory? Is the Lyapunov exponent (estimated from divergence) consistent with the largest |λ| > 1 of the fitted operator?
+
+I'll go with:
+
+**H1: Spectral eigendecomposition diagnostics of best linear operator**
+**H2: Information-theoretic necessity-of-nonlinearity test**
+**H3: Internal-regime-segmented multi-linear operator**
+
+Wait — H3 is very close to C002_H02 in mechanism. C002_H02 was "exogenous-parameter-conditioned local Koopman / regime-aware linear operator" — but it explicitly required exogenous parameters which are unavailable. So H3 differs by using **internal clustering of history** rather than exogenous parameters. This is genuinely different in mechanism because:
+- The "regime" emerges from data, not given externally
+- No exogenous inputs needed
+- The clustering itself is a scientific question (what K? what clusters?)
+
+OK let me also think about H1 more carefully. The diagnostic hypothesis is interesting but might be hard to "execute" in the standard pipeline. Let me think...
+
+Actually, a spectral diagnostic IS executable: train a linear operator, compute its eigenvalues, characterize them. The "minimum experiment" is well-defined.
+
+But the question is — what's the *scientific prediction* that distinguishes it from existing approaches? If I just fit a linear operator and look at the spectrum, I'm essentially doing DMD. The novelty would be:
+- **Comparing the spectrum to the POD singular values**: if POD singular values decay slowly, the linear spectrum should reflect this
+- **Testing for non-modal (non-normal) transient growth**: the ratio of largest to smallest singular value of the learned operator
+
+OK let me refine to make these genuinely novel and well-formed:
+
+**H1: Non-modal transient growth / non-normality test**
+- Question: Are the latent dynamics non-normal (transient amplification beyond spectral radius)?
+- Mechanism: If dynamics are non-normal, short-term error grows faster than long-term; this is invisible to eigenvalues
+- Math: Compute the learned operator A's SVD; ratio σ_max/σ_min indicates non-normality
+- If true: short-horizon error grows exponentially with rate related to non-normality index
+- If false: dynamics are normal (eigenvalue analysis suffices)
+
+This is a **purely diagnostic** hypothesis, falsifiable, novel.
+
+**H2: Nonlinearity necessity test via conditional mutual information**
+- Question: Does the latent dynamics contain essential nonlinearity?
+- Mechanism: Compare I(z_{t+1}; z_t) vs. I(z_{t+1}; A·z_t) for fitted linear A
+- If significantly different, residual contains essential nonlinearity
+- Distinguishing: if linear captures ≥95% of MI, dynamics are essentially linear
+
+**H3: Internal-state regime-segmented multi-linear operator with adaptive clustering**
+- Question: Are there discrete internal dynamical regimes in latent space?
+- Mechanism: Cluster the windows of latent_history (e.g., 10-step windows) into K regimes via K-means/GMM; fit A_k per regime
+- Novelty vs. C002_H02: uses internal state, not exogenous parameters
+- Falsification: if per-regime error = global error across all K tested, regime structure is spurious
+
+Let me also think about novelty/relation to existing methods:
+- H1 relates to DMD, but the scientific question (non-normality) is novel for this latent space
+- H2 relates to information-theoretic tests of dynamics, but specifically conditional MI test of linearity
+- H3 relates to regime-switching models (Markov-switching, MS-DMD), but uses internal clustering
+
+These are all genuinely novel.
+
+Let me also consider whether H2 might be hard to execute — KSG estimators need decent sample sizes. With development_train + development_validation, we should have plenty of data. KSG is well-established.
+
+Actually, let me reconsider H1. The "minimum experiment" for a spectral diagnostic is straightforward: fit A via least-squares on transitions, then compute SVD/eigendecomposition. The "distinguishing prediction" should be specific. Let me think:
+
+If non-normality is HIGH (κ(A) = σ_max(A) / σ_min(A^{-1}) >> 1):
+- Short-time prediction can be very accurate (close to true)
+- Multi-step prediction degrades fast as initial perturbation gets rotated to amplify
+- Lyapunov exponent estimated from one-step errors should be positive (chaotic indicator)
+
+If non-normality is LOW:
+- Spectral radius predicts long-term behavior
+- One-step and multi-step errors should have consistent scaling
+
+This is testable.
+
+Actually, I think H2 might be the strongest because it directly addresses whether the linear assumption is fundamentally sufficient. If linear suffices, then any of C003_H01/H02/H03 should work. If not, we need nonlinearity.
+
+Let me commit to:
+
+**H1: Non-modal / non-normal transient growth hypothesis**
+**H2: Conditional mutual information test of nonlinearity necessity**
+**H3: Internal-regime-clustered multi-linear operator**
+
+Wait, I want to make H3 even more distinct. Instead of just K-means clustering, what about:
+- **Differentiation between fast and slow time scales** based on spectral decomposition of latent_history
+- Or **attention to which modes are active at which times**
+
+Actually, here's a really novel idea:
+
+**H3 alternative: DMD with sparsity on selected mode couplings**
+- The "POD-energy-band-structured" idea (C003_H02) tried sparsity based on energy bands
+- What if we use **learned** sparse structure via thresholding based on empirical mode-coupling strength?
+- Novel: not based on energy band, but on observed coupling
+
+Hmm, but this is too close to C003_H02.
+
+Let me try:
+
+**H3: Recurrence-structure / recurrence-network hypothesis**
+- In chaotic and quasi-periodic dynamics, the latent state visits neighborhoods repeatedly (recurrence)
+- The recurrence structure reveals the dynamical skeleton
+- Hypothesis: linear prediction in recurrent neighborhoods is more accurate than in non-recurrent regions
+- Test: cluster latent state space by recurrence density; compare linear error in high-density vs. low-density regions
+- If true: linear models work better in recurrences (data-rich regions)
+- If false: linear error is independent of recurrence density (uniformly inadequate)
+
+This is novel and uses only latent_state and latent_history.
+
+OK, my final three:
+
+1. **H1**: Non-modal/non-normal transient growth test of latent linear operator
+2. **H2**: Conditional mutual information test of linearity necessity
+3. **H3**: Recurrence-density-conditioned linear operator quality test
+
+These are all:
+- Executable under the capability profile (only latent_state, latent_history)
+- Genuinely novel (not in failed hypotheses)
+- Falsifiable with specific criteria
+- Development-only
+- Different mechanisms (spectral, information-theoretic, geometric)
+
+Now let me write up the JSON carefully. I need to be thorough on every field.
+
+Let me also think about the "minimum_experiment" carefully:
+
+**H1 minimum experiment:**
+1. Fit A via least-squares on (z_t, z_{t+1}) from development_train
+2. Compute eigendecomposition and SVD of A
+3. Compute non-normality index: κ(A) = ||A||_2 · ||A^{-1}||_2 (condition number) or the Henrici index
+4. Compute predictions at horizons 1, 5, 10, 20 steps
+5. Compare growth rate of error to predicted non-normal amplification
+6. **Falsification criterion**: If κ(A) < 10 (low non-normality) AND multi-step error growth rate < spectral radius prediction, dynamics are essentially normal; non-modal hypothesis is falsified
+
+**H2 minimum experiment:**
+1. Fit A via least-squares on development_train
+2. Compute I(z_{t+1}; z_t) using KSG estimator with bins
+4. Compute I(z_{t+1}; z_t | A·z_t) — i.e., given the linear forecast, how much info is left?
+5. If conditional MI is significant (ratio to total MI > 5%), nonlinear residual has essential information
+6. **Falsification criterion**: If conditional MI < 5% of total MI, linear model captures essential dynamics; linearity hypothesis is supported
+
+**H3 minimum experiment:**
+1. Compute recurrence density for each latent state via k-NN in latent space
+2. Partition development_validation states into bins by recurrence density (high/mid/low)
+4. Compare linear one-step MSE in each bin
+5. **Falsification criterion**: If high-density MSE ≤ low-density MSE by ≥ 20%, recurrence-conditioning hypothesis supported; if differences < 5%, hypothesis is not supported
+
+These are all solid. Let me write the JSON.
+
+Actually, I want to reconsider once more whether these are "genuinely different" and not just sub-variations of failed hypotheses.
+
+C001_H01: Non-Markovian delay-coordinate operator — uses history explicitly in linear operator
+C001_H02: Divergence-free latent coords — unavailable inputs
+C001_H03: Slow manifold + fast correction — time-scale decomposition
+C002_H01: Symplectic/energy-preserving — geometric structure
+C002_H02: Parameter-conditioned Koopman — exogenous params (unavailable)
+C002_H03: Sparse symbolic + closure — different mechanism but failed
+C003_H01: Bayesian shrinkage linear — probabilistic regularization of linear operator
+C003_H02: POD-energy-band sparse linear — sparsity structure
+C003_H03: Linear core + tail residual — additive decomposition
+
+None of these test:
+- Non-normality of the linear operator (H1)
+- Information-theoretic test of linearity (H2)
+- Recurrence-density-conditional error (H3)
+
+So these are genuinely different. 
+
+Now let me write up the final JSON.
+
+For the research strategy: we should continue parallel exploration because no scientific mechanism has been falsified. The three new hypotheses test genuinely different mechanisms that probe whether the latent dynamics are normal, linear, or have data-density-dependent predictability. If H1 succeeds (non-normal), then H2 and H3 might fail. If H2 succeeds (linear suffices), then C003_H01/H02/H03 would likely have worked too — and we have a path forward. If H3 succeeds (recurrence-conditioned), it suggests regime structure.
+
+Let me also add to the unresolved_questions list:
+- Are the latent dynamics normal or non-normal?
+- Is there essential nonlinearity (closure problem)?
+- Is there spatial heterogeneity in predictability?
+
+Let me write the final JSON now.
+
+Actually, let me also be careful about one thing: the data_policy says "allowed_splits: development_train, development_validation" and "final_test_access: false". I need to make sure my hypotheses explicitly use these.
+
+Also, for H2, the KSG estimator requires careful implementation. But it's well-established and feasible.
+
+Let me also think about risks:
+- H1: If the linear operator fit is poor (high residual), the non-normality index is unreliable. Mitigation: report fit quality first.
+- H2: KSG estimator has finite-sample bias; need to ensure large enough N.
+- H3: Choice of k for k-NN affects results; need sensitivity analysis.
+
+OK, time to write the JSON.
+
+One more consideration: the user said "Avoid repeating already falsified mechanisms by simple parameter changes." Since none have been *scientifically* falsified (only infrastructurally), I have freedom to revisit themes — but I should explicitly avoid the same mechanism. My three hypotheses are all different mechanisms, so this is fine.
+
+Let me also double-check the structure required:
+
+```json
+{
+  "research_strategy": {
+    "mode": "parallel_exploration",
+    "reason": "..."
+  },
+  "unresolved_questions": ["..."],
+  "hypotheses": [
+    {
+      "id": "...",
+      "name": "...",
+      "scientific_question": "...",
+      "mechanism": "...",
+      "mathematical_form": "...",
+      "motivation": "...",
+      "explanation_of_previous_failure": "...",
+      "distinguishing_prediction": "...",
+      "minimum_experiment": "...",
+      "expected_observation_if_true": "...",
+      "expected_observation_if_false": "...",
+      "risks": "...",
+      "relation_to_existing_methods": "...",
+      "novelty_status": "..."
+    },
+    ...
+  ]
+}
+```
+
+Let me write this carefully.
+
+For the "explanation_of_previous_failure" field, since all prior hypotheses failed infrastructurally (not scientifically), I should explain that the mechanism was never evaluated. Each hypothesis has its own framing.
+
+Final JSON plan:
+
+**H1: Non-normal latent operator with non-modal transient growth**
+- Question: Is the latent dynamics operator non-normal (transient growth beyond spectral radius)?
+- Mechanism: Learn A, analyze SVD vs eigenvalues
+- Mathematical form: κ(A) = σ_max(A)/σ_min(A), Hénrici index = || |A| |A^{-1}| ||_F - 1
+- Motivation: Non-normality is invisible to eigenvalues but dominates short-term predictability
+- Explanation of prior failure: C003 hypotheses tested operator structure (sparsity, shrinkage, residual) but none specifically tested non-normality. Prior failures were infrastructural; mechanism untested.
+- Distinguishing prediction: short-horizon error amplification exceeds long-horizon spectral radius prediction
+- Min experiment: Strong, falsifiable
+- Expected if true: short-horizon error grows faster than spectral radius would suggest
+- Expected if false: linear prediction error follows spectral radius prediction across all horizons
+- Risks: numerical conditioning of A^{-1}; low signal if dynamics are normal
+- Relation to existing methods: extends DMD/eigenvalue analysis to non-modal regime
+
+**H3: Recurrence-density-conditioned linear predictability**
+- Question: Is the linear one-step prediction accuracy spatially homogeneous in latent space, or concentrated in recurrent (high data density) regions?
+- Mechanism: latent space geometry matters; linear local models fit better in data-rich regions
+- Math: For each z, compute k-NN density ρ(z); partition into bins; compare MSE(ρ_high), MSE(ρ_mid), MSE(ρ_low)
+- Motivation: closure models often work in recurrent skeleton but fail in transitions; classical chaos result
+- Explanation of prior failure: prior hypotheses fit global operators; H3 tests spatial heterogeneity
+- Distinguishing prediction: MSE is a monotone decreasing function of ρ(z)
+- Falsification: if MSE is statistically indistinguishable across bins, recurrence-conditioning unsupported
+- Risks: bin definition sensitivity; curse of dimensionality in 52D
+
+OK let me write the final JSON now.
+
+One more thing: I need to ensure I'm using only:
+- latent_state
+- latent_history
+- latent_dim=52
+- development_train, development_validation
+
+My hypotheses all comply.
+
+Final write-up incoming.</think>
+
+```json
+{
+  "research_strategy": {
+    "mode": "parallel_exploration",
+    "reason": "Across cycles 0-3, every experiment failed for purely infrastructural reasons (AlgorithmAgent.run() missing research_dir/output_dir args in C001; latent_dim contract mismatch in C002_H01/H02; final-test access detected inside representation.normalization plus a GBK UnicodeEncodeError in C002_H03; missing ContractValidationError import breaking the whole contract pipeline in C003). Zero scientific mechanisms have been falsified and BOOTSTRAP_H1 is only 'inconclusive' because its output schema was not comparable. We therefore stay in parallel exploration, but in cycle 4 the three hypotheses deliberately avoid every mechanism that was previously attempted (non-Markovian delay coords, divergence-free coords, slow/fast decomposition, symplectic structure, parameter-conditioned Koopman, sparse-symbolic closure, Bayesian shrinkage, energy-band sparsity, linear+tail-residual hybrid) and instead probe three orthogonal properties of the latent dynamics that none of the prior hypotheses tested: (i) whether the best-fit linear operator is normal or non-normal (spectral/non-modal transient growth), (ii) whether the residual beyond the linear operator is information-theoretically essential (nonlinearity necessity), and (iii) whether linear predictability is spatially uniform or recurrence-density-dependent (geometric heterogeneity). All three hypotheses operate strictly on latent_state and latent_history, use latent_dim = 52, fit only on development_train and are evaluated on development_validation, and each carries an explicit falsification criterion."
+  },
+  "unresolved_questions": [
+    "Is the best linear operator that fits the 52D latent dynamics normal (eigenvalue-determined) or non-normal (subject to non-modal transient growth)?",
+    "Is there information-theoretically essential nonlinearity in the latent dynamics, or does a linear operator already capture the mutual information between consecutive latent states?",
+    "Is the latent space geometrically heterogeneous in linear predictability, with linear prediction systematically better in recurrent (high data-density) neighborhoods than in transitional (low data-density) ones?",
+    "Across cycles 0-3 no scientific claim has ever been evaluable: can cycle 4 produce at least one falsifiable, falsification-ready verdict?",
+    "Why did the BOOTSTRAP_H1 candidate fail to expose comparable one-step metrics, and what output schema is required so a single candidate's metrics can be cross-compared?"
+  ],
+  "hypotheses": [
+    {
+      "id": "C004_H01",
+      "name": "Non-modal transient growth in the 52D latent operator",
+      "scientific_question": "Is the optimal linear operator A that maps latent_state z_t to z_{t+1} non-normal, i.e., does it admit transient amplification that exceeds its spectral radius?",
+      "mechanism": "If A is non-normal (i.e., A A^T \\neq A^T A, equivalently the SVD singular values of A are not equal to the magnitudes of its eigenvalues), perturbations aligned with the most-amplifying left singular vector can grow by a factor of the condition number \\kappa(A)=\\sigma_{\\max}(A)/\\sigma_{\\min}(A) before the asymptotic spectral radius takes over. For reduced-order fluid models, non-normality is the standard explanation for short-horizon predictability failures that eigenvalue analysis alone cannot account for. The hypothesis predicts that the empirical short-horizon one-step-to-five-step error growth in development_validation will correlate positively with \\kappa(A) computed on development_train.",
+      "mathematical_form": "A = \\arg\\min_{A} \\sum_t \\|z_{t+1}-A z_t\\|_2^2 on development_train. Define the Henrici non-normality index \\Delta_N(A) = \\|\\,|A|\\,|A^{-1}|\\,\\|_F - 1 (with |A| = \\sqrt{A^TA} and |A^{-1}| = \\sqrt{(A^{-1})^T A^{-1}}). Prediction: \\mathrm{err}(h) = \\|\\hat z_{t+h}-z_{t+h}\\|_2 satisfies \\log \\mathrm{err}(h) \\approx \\log \\mathrm{err}(1) + (h-1)\\log \\sigma_{\\max}(A) + c \\cdot \\Delta_N(A), with c>0 detectable in development_validation. Here \\hat z_{t+h}=A^h z_t is the iterated linear rollout.",
+      "motivation": "All C003 hypotheses (Bayesian shrinkage, energy-band sparse, linear core + tail residual) modify the operator but treat eigenvalues as the primary object. In non-normal systems the spectral radius is a poor short-horizon predictor and transient growth dominates, so a fundamentally different falsifiable signature arises from comparing eigenvalue-predicted growth to SVD-predicted growth. This is a known ROM phenomenon (Trefethen et al. 1993, Bagheri 2013) that has not been tested in this 52D latent space.",
+      "explanation_of_previous_failure": "BOOTSTRAP_H1 was inconclusive only because its output schema lacked comparable metrics. C001/C002/C003 hypotheses never reached evaluation: C001 hit a missing-argument bug, C002 hit a latent_dim contract mismatch and a final-test access leak, C003 hit a missing ContractValidationError import. The non-normality mechanism itself has never been implemented or evaluated; prior candidates addressed operator structure (sparsity, shrinkage, residual closure) and time structure (delay coords, multi-scale), but none performed an SVD-vs-eigenvalue diagnostic on a fitted operator. This hypothesis is therefore both executable under the current latent_state + latent_history capability and not a re-run of any prior mechanism.",
+      "distinguishing_prediction": "If the latent operator is genuinely non-normal, the empirical error ratio \\mathrm{err}(h)/\\mathrm{err}(1) at small h (e.g., h=3..5) will significantly exceed the eigenvalue-based prediction \\sigma_{\\max}(A)^{h-1}, and the gap will be quantitatively explained by \\Delta_N(A). If the operator is normal, the gap will be statistically indistinguishable from zero and \\sigma_{\\max}(A) alone will predict multi-step error growth.",
+      "minimum_experiment": "Step 1: collect (z_t, z_{t+1}) pairs from development_train; solve least-squares for A in \\mathbb{R}^{52\\times 52} and verify one-step MSE on development_train. Step 2: compute eigendecomposition of A and SVD of A; compute \\kappa(A)=\\sigma_{\\max}(A)/\\sigma_{\\min}(A), the Henrici index \\Delta_N(A), and the spectral radius \\rho(A)=\\max_i |\\lambda_i|. Step 3: on development_validation, roll out A^h for h=1,2,3,5,10 and measure \\mathrm{err}(h)=\\|A^h z_t - z_{t+h}\\|_2 averaged over windows; also compute the linear eigenvalue prediction \\sigma_{\\max}(A)^{h-1}\\mathrm{err}(1). Step 4: regress \\log\\mathrm{err}(h) on \\log\\sigma_{\\max}(A)^{h-1} and on a non-homeness-augmented predictor; compare via F-test or BIC. Falsification criterion: if \\Delta_N(A)<10 AND the BIC of the eigenvalue-only model is \\geq as good as the BIC of the non-normality-augmented model (gap < 2) AND the empirical-to-eigenvalue error ratio is within a 10% confidence band for h=3..10, then the non-normality mechanism is falsified and the latent dynamics are eigenvalue-predicted.",
+      "expected_observation_if_true": "\\Delta_N(A) on the order of \\geq 10^2 (typical for non-normal fluid ROMs), and the empirical \\mathrm{err}(h) curve lies strictly above the eigenvalue-predicted curve for h=3..10, with the gap shrinking as h grows toward the asymptotic regime.",
+      "expected_observation_if_false": "\\Delta_N(A) on the order of unity (operator close to normal), \\sigma_{\\max}(A) and \\rho(A) of similar magnitude, and the empirical \\mathrm{err}(h) matches \\sigma_{\\max}(A)^{h-1}\\mathrm{err}(1) within Monte Carlo confidence bands across all h.",
+      "risks": "If the least-squares fit is poor (one-step MSE comparable to baseline variance), the non-normality indices are unreliable; the experiment reports one-step fit quality first and only proceeds if R^2>0.5 on development_train. If \\sigma_{\\min}(A) is near zero the condition number is poorly defined; in that case the Henrici index \\Delta_N(A) is reported instead and used as the non-normality measure. The committed computation uses only development_train / development_validation (no final_test access).",
+      "relation_to_existing_methods": "Directly extends Dynamic Mode Decomposition (Tu et al. 2014, Kutz et al. 2016) and Koopman spectral analysis to a non-modal regime. Closely related to the non-normal transient growth literature in fluid mechanics (Trefethen, Trefethen & Reddy 1993; Bagheri 2013). Differs from BOOTSTRAP_H1's regime-dependent linear family because no regime index is used; differs from C002_H02 because no exogenous parameter is required; differs from C003 hypotheses because the operator is fit and not regularized.",
+      "novelty_status": "Novel in this 52D POD-latent context. Non-normality has not been previously tested against the latent_operator cluster, nor in any of the failed C001-C003 candidates."
+    },
+    {
+      "id": "C004_H02",
+      "name": "Information-theoretic necessity test for latent nonlinearity",
+      "scientific_question": "Does the residual beyond the best linear operator carry information-theoretically essential information about the next latent state, or does a linear operator already capture the predictive mutual information?",
+      "mechanism": "Linearity is necessary for a linear operator to be the correct reduced model. The conditional mutual information I(z_{t+1}; z_t \\,|\\, A z_t) measures how much information about z_{t+1} remains after the linear forecast is known. If this residual information is statistically significant (positive), essential nonlinearity is present; if it is statistically zero within estimator noise, a linear operator is information-theoretically sufficient and C003-style mechanisms should eventually succeed once the pipeline executes.",
+      "mathematical_form": "Estimate via k-nearest-neighbor (KSG) estimator on development_validation: \\hat I(z_{t+1}; z_t) and \\hat I(z_{t+1}; z_t \\,|\\, A z_t), where A is the least-squares fit from development_train. Compute the residual-information ratio r = \\hat I(z_{t+1}; z_t \\,|\\, A z_t) / \\hat I(z_{t+1}; z_t). Significance is assessed by shuffling z_{t+1} within latent-state bins (permutation test, N\\geq 1000 resamples) to obtain a null distribution for \\hat I(\\cdot;\\cdot\\,|\\,\\cdot).",
+      "mathematical_form": "Use the Kraskov-Stögbauer-Grassberger (KSG) estimator \\hat I^{(1)}(X;Y) = \\psi(k) - \\langle \\psi(n_{x,i}+1) + \\psi(n_{y,i}+1) \\rangle + \\psi(N) (with \\psi the Digamma polynomial), operating on the triples (z_t, z_{t+1}, A z_t) drawn from development_validation. The three-variable KSG estimator \\hat I(z_{t+1}; z_t \\,|\\, A z_t) is used with k=4..10 neighbors; the final estimate averages over k to reduce bias.",
+      "motivation": "Closure-model design (C001_H03, C002_H03, C003_H03 all attacked this implicitly) rests on the assumption that a residual is information-theoretically necessary. Without this evidence the residual is just a fitting regularizer. A quantitative nonlinearity test on the latent dynamics is therefore the missing scientific premise behind three of the prior candidates and provides a binary, falsifiable verdict independent of any specific closure architecture.",
+      "explanation_of_previous_failure": "All C001-C003 experiments failed for execution/contract reasons and produced no scientific verdict. The information-theoretic test itself has never been performed in this latent pipeline. C002_H03 (sparse symbolic + closure residual) is the closest in spirit but never executed; C004_H02 is fundamentally different because it does not propose a closure model — it tests whether any closure is information-theoretically necessary in the first place.",
+      "distinguishing_prediction": "If essential nonlinearity is present, the residual MI ratio r will exceed the 95th percentile of the permutation null by a statistically significant margin (e.g., r \\geq 0.05 with p<0.01). If the latent dynamics are essentially linear, r will fall within the null distribution (p\\geq 0.1) and any apparent closure improvement over A will be attributable to overfitting rather than to nonlinearity.",
+      "minimum_experiment": "Step 1: fit A on development_train with the same procedure as C004_H01; verify one-step MSE on development_train. Step 2: draw a sample of N\\geq 10^4 transitions from development_validation (or full set if smaller) and compute (z_t, z_{t+1}, A z_t) triples. Step 3: estimate \\hat I(z_{t+1}; z_t) and \\hat I(z_{t+1}; z_t\\,|\\,A z_t) using KSG with k=4..10. Step 4: build a permutation null by independently shuffling z_{t+1} within equal-width bins of \\|z_t\\|_2 for N_s=1000 permutations. Step 5: report r, the permutation p-value, and bootstrap 95% confidence intervals over transitions. Falsification criterion: if r\\leq 0.05 AND the permutation p-value \\geq 0.1 AND the 95% CI upper bound on r is below 0.10, the nonlinearity-necessity hypothesis is falsified and a linear operator is information-theoretically sufficient. If r\\geq 0.15 with p<0.01, the hypothesis is supported and any closure correction beyond A is, in principle, justified.",
+      "expected_observation_if_true": "r in the 0.10-0.40 range with permutation p<0.01 and a bootstrap 95% CI that excludes 0.05; the residual carries meaningful predictive information that any linear operator cannot capture.",
+      "expected_observation_if_false": "r below 0.05, permutation p\\geq 0.1, and the bootstrap CI contains 0; in this case the linear operator is information-theoretically sufficient and C003_H01/H02/H03 should be the natural next scientific targets once execution is repaired.",
+      "risks": "KSG estimator bias grows with dimensionality; 52D joint estimation of (z_t, A z_t, z_{t+1}) is high-dimensional and may inflate r. Mitigation: estimate using PCA-reduced projections (e.g., to 5D) and verify stability across k. Finite-sample noise in development_validation could mask small but real nonlinearity; bootstrap CI and permutation p-value are required safeguards. Only development_train and development_validation are used; final_test is forbidden by capability profile.",
+      "relation_to_existing_methods": "Extends the information-theoretic approach to dynamics identification (Deco, Kringelbach, Tononi) and the nonlinearity tests of Theiler et al. (1992) into a conditional-MI formulation that targets latent operator sufficiency. Differs from C001_H01 (delay-coordinate operator) by testing necessity rather than proposing a specific parametric closure; differs from C002_H03/C003_H03 by not prescribing a closure architecture.",
+      "novelty_status": "Novel for this 52D POD-latent pipeline. None of the prior hypotheses tested whether nonlinearity is information-theoretically necessary; they all either assumed it (closure residuals) or denied it (pure linear-operator variants) a priori."
+    },
+    {
+      "id": "C004_H03",
+      "name": "Recurrence-density-conditioned heterogeneity of latent linear predictability",
+      "scientific_question": "Is the latent space geometrically heterogeneous in linear predictability, with one-step MSE a monotone decreasing function of local recurrence density (k-NN density in latent space), or is linear predictability spatially uniform?",
+      "mechanism": "In chaotic and quasi-periodic flows, the trajectory spends disproportionate time in low-dimensional unstable manifolds and revisits neighborhoods with high local density (recurrent skeleton). Linear local models should fit the recurrent skeleton better than transitional regions because (i) recurrent neighborhoods contain more training data, reducing estimator variance, and (ii) local dynamics on slow manifolds are approximately linear. The hypothesis predicts that a single global linear operator A will exhibit spatially heterogeneous one-step error that scales monotonically with local recurrence density \\rho(z).",
+      "mathematical_form": "For each z in development_validation, define the k-NN density \\rho_k(z) = (k)/(V_{d}\\cdot r_k(z)^d) where r_k(z) is the distance to the k-th nearest neighbor in the latent-state cloud from development_train, d=52 and V_d the unit-ball volume. Partition \\rho_k into low/med/high tertiles. Compute one-step MSE M_{\\mathrm{low}}, M_{\\mathrm{med}}, M_{\\mathrm{high}} under the global A fit on development_train. The hypothesis is the monotone ordering M_{\\mathrm{low}} \\geq M_{\\mathrm{med}} \\geq M_{\\mathrm{high}}, with statistical significance tested by one-sided Wilcoxon signed-rank on per-sample errors between bins.",
+      "motivation": "Spatially uniform linear predictability is the implicit assumption of every global linear-operator hypothesis so far (BOOTSTRAP_H1, C003_H01, C003_H02, C003_H03). In fluid POD-latent dynamics this assumption is known to fail: the slow-manifold skeleton carries most of the predictability while intermittent bursts dominate the error norm. Testing this empirically in the 52D latent space discriminates whether future hypotheses should be local/recurrent (e.g., per-cluster linear operators) or whether a single global A is the right architecture. Crucially, unlike C002_H02 (exogenous-parameter-conditioned Koopman), this hypothesis uses only internal latent geometry and therefore is executable under the unavailable exogenous-parameter constraint.",
+      "explanation_of_previous_failure": "All previous attempts failed at the execution layer, never reaching scientific evaluation. C002_H02 attempted a regime-aware linear operator but used exogenous parameters that are explicitly unavailable, so even if executed it would have been scientifically untestable. C004_H03 replaces exogenous conditioning with internal latent-density conditioning, which is observable from latent_state and latent_history alone. C001_H03 (slow/fast decomposition) and C003_H03 (linear + tail residual) both tested global operator structures; neither tested spatial heterogeneity of linear error.",
+      "distinguishing_prediction": "If predictability is genuinely recurrence-conditioned, the per-sample one-step error norm scales as a decreasing function of \\rho_k(z) and the test-set MSE in the high-density bin is at least 20% lower than in the low-density bin with one-sided Wilcoxon p<0.01. If predictability is spatially uniform, the three bin MSEs are statistically indistinguishable (differences within bootstrap 95% CI of zero, all pairwise Wilcoxon p\\geq 0.1).",
+      "minimum_experiment": "Step 1: fit A on development_train (same protocol as C004_H01). Step 2: build a kd-tree of latent_state from development_train with k=20 neighbors; compute \\rho_k(z) on development_validation. Step 3: split development_validation into tertiles of \\rho_k. Step 4: compute one-step MSE per tertile and per-sample error vectors; run pairwise one-sided Wilcoxon tests (high<low, med<low, high<med) with Bonferroni correction. Step 5: bootstrap tertile MSEs over 500 resamples to obtain confidence intervals. Falsification criterion: if no pairwise Wilcoxon test is significant (all p\\geq 0.1 after Bonferroni) AND the largest bin-to-bin MSE ratio is below 1.10, predictability is spatially uniform and the recurrence-conditioning hypothesis is falsified. If all three pairwise tests are significant with MSE ratio (low/high)\\geq 1.25, the hypothesis is supported and motivates a follow-up per-cluster linear operator.",
+      "expected_observation_if_true": "M_{\\mathrm{low}} / M_{\\mathrm{high}} \\geq 1.5 (typical for fluid latent dynamics) with all three pairwise Wilcoxon p<0.01 after Bonferroni; the high-density tertile identifies the recurrent skeleton and the low-density tertile identifies transient excursions where the global linear operator underperforms.",
+      "expected_observation_if_false": "M_{\\mathrm{low}} / M_{\\mathrm{high}} \\leq 1.10 with all pairwise Wilcoxon p\\geq 0.1 after Bonferroni; linear predictability is spatially uniform and a single global linear operator (or a sparsity/regularization variant thereof) is the appropriate architecture.",
+      "risks": "Curse of dimensionality in 52D k-NN density estimation: k=20 may be too small or too large. Sensitivity analysis over k\\in\\{10,20,40,80\\} is mandatory. If latent-state distribution is near-uniform (no recurrent skeleton), tertile MSEs will be indistinguishable regardless of k, which would itself be a strong scientific finding. The hypothesis explicitly conditions on construction without final_test access.",
+      "relation_to_existing_methods": "Closely related to local linear models in nonlinear dynamics identification, recurrence-plot statistics (Marwan 2008), and to the 'coherent sets' literature in dynamical systems. Differs from C001_H01 (delay-coordinate operator) by using geometric density rather than lagged-time embedding; differs from C002_H02 (parameter-conditioned Koopman) by using internal latent geometry rather than unavailable exogenous parameters; differs from C003_H03 (linear + tail residual) by testing spatial heterogeneity of a single global A.",
+      "novelty_status": "Novel for this 52D POD-latent pipeline. Recurrence-density conditioning of linear predictability has not been tested by any prior candidate."
+    }
+  ]
+}
+```

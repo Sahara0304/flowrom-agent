@@ -1,0 +1,620 @@
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Tuple
+
+
+ROOT = Path(
+    __file__
+).resolve().parents[1]
+
+CAPABILITY_PATH = (
+    ROOT
+    / "runtime"
+    / "capability_profile.json"
+)
+
+
+class AlgorithmContractError(ValueError):
+    pass
+
+
+def load_capability_profile() -> Dict[str, Any]:
+
+    if not CAPABILITY_PATH.exists():
+
+        return {
+            "representation": {
+                "type":
+                    "POD_latent",
+
+                "latent_dimension":
+                    52,
+
+                "source_field":
+                    "magnitude",
+            },
+
+            "available_inputs": [
+                "latent_state",
+                "latent_history",
+            ],
+
+            "unavailable_inputs": [
+                "pressure",
+                "velocity_components",
+                "divergence",
+                "curl",
+                "boundary_conditions",
+                "exogenous_parameters",
+                "external_control_inputs",
+            ],
+
+            "data_policy": {
+                "allowed_splits": [
+                    "development_train",
+                    "development_validation",
+                ],
+
+                "forbidden_splits": [
+                    "final_test",
+                ],
+
+                "final_test_access":
+                    False,
+            },
+        }
+
+    return json.loads(
+        CAPABILITY_PATH.read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+# ============================================================
+# Final-test leakage
+# ============================================================
+
+ACTUAL_FINAL_TEST_PATTERNS = [
+
+    r"\bload(?:ed|ing)?\s+.*final[_ -]?test",
+
+    r"\bread(?:ing)?\s+.*final[_ -]?test",
+
+    r"\btrain(?:ed|ing)?\s+.*(?:on|using).*final[_ -]?test",
+
+    r"\bfit(?:ted|ting)?\s+.*(?:on|using).*final[_ -]?test",
+
+    r"\btun(?:e|ed|ing)?\s+.*(?:on|using).*final[_ -]?test",
+
+    r"\bevaluat(?:e|ed|ing)?\s+.*(?:on|using).*final[_ -]?test",
+
+    r"\bsnapshot[_ -]?40[1-9]\b",
+
+    r"\bsnapshot[_ -]?4[1-9][0-9]\b",
+
+    r"\bsnapshot[_ -]?5[0-9]{2}\b",
+
+    r"\bsnapshot[_ -]?6[0-9]{2}\b",
+
+    r"\bsnapshot[_ -]?7[0-9]{2}\b",
+
+    r"\bsnapshot[_ -]?800\b",
+
+    r"\bsnapshots?\s+401\s*(?:to|-)\s*800\b",
+]
+
+
+SAFE_POLICY_PATTERNS = [
+
+    r"\bnever\s+.*final[_ -]?test\b",
+
+    r"\bdo\s+not\s+.*final[_ -]?test\b",
+
+    r"\bfinal[_ -]?test[_ -]?access\s*[:=]\s*false\b",
+
+    r"\bfinal[_ -]?test\s+is\s+(?:forbidden|prohibited|not allowed)\b",
+]
+
+
+def _iter_strings(
+    obj: Any,
+    path: str = "",
+) -> Iterable[
+    Tuple[str, str]
+]:
+
+    if isinstance(
+        obj,
+        dict,
+    ):
+
+        for key, value in obj.items():
+
+            child = (
+                f"{path}.{key}"
+                if path
+                else str(key)
+            )
+
+            yield from _iter_strings(
+                value,
+                child,
+            )
+
+    elif isinstance(
+        obj,
+        list,
+    ):
+
+        for index, value in enumerate(
+            obj
+        ):
+
+            child = (
+                f"{path}[{index}]"
+            )
+
+            yield from _iter_strings(
+                value,
+                child,
+            )
+
+    elif isinstance(
+        obj,
+        str,
+    ):
+
+        yield path, obj
+
+
+def detect_final_test_access(
+    contract: Dict[str, Any],
+) -> List[str]:
+
+    violations = []
+
+    for path, value in _iter_strings(
+        contract
+    ):
+
+        text = value.lower()
+
+        # ----------------------------------------------------
+        # Policy statements are safe.
+        # ----------------------------------------------------
+
+        if any(
+            re.search(
+                pattern,
+                text,
+            )
+            for pattern
+            in SAFE_POLICY_PATTERNS
+        ):
+            continue
+
+        for pattern in ACTUAL_FINAL_TEST_PATTERNS:
+
+            if re.search(
+                pattern,
+                text,
+            ):
+
+                violations.append(
+                    path
+                )
+
+                break
+
+    return sorted(
+        set(
+            violations
+        )
+    )
+
+
+# ============================================================
+# Data policy
+# ============================================================
+
+def validate_data_policy(
+    contract: Dict[str, Any],
+) -> None:
+
+    policy = contract.get(
+        "data_policy",
+        {},
+    )
+
+    if (
+        policy.get(
+            "final_test_access"
+        )
+        is not False
+    ):
+
+        raise AlgorithmContractError(
+            "data_policy.final_test_access "
+            "must be false."
+        )
+
+    allowed = set(
+        policy.get(
+            "allowed_split",
+            [],
+        )
+    )
+
+    required = {
+        "development_train",
+        "development_validation",
+    }
+
+    if not required.issubset(
+        allowed
+    ):
+
+        raise AlgorithmContractError(
+            "Candidate must only train/validate "
+            "using development splits."
+        )
+
+    forbidden = set(
+        policy.get(
+            "forbidden_split",
+            [],
+        )
+    )
+
+    if "final_test" not in forbidden:
+
+        raise AlgorithmContractError(
+            "Contract must explicitly forbid "
+            "final_test."
+        )
+
+
+# ============================================================
+# Implementability
+# ============================================================
+
+def validate_implementability(
+    contract: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    capability = (
+        load_capability_profile()
+    )
+
+    requirements = contract.setdefault(
+        "implementation_requirements",
+        {},
+    )
+
+    current_representation = (
+        capability
+        .get(
+            "representation",
+            {},
+        )
+    )
+
+    required_representation = (
+        requirements
+        .get(
+            "required_representation"
+        )
+    )
+
+    required_dimension = (
+        requirements
+        .get(
+            "required_latent_dimension"
+        )
+    )
+
+    required_inputs = set(
+        requirements
+        .get(
+            "required_inputs",
+            [],
+        )
+    )
+
+    required_external = set(
+        requirements
+        .get(
+            "required_external_parameters",
+            [],
+        )
+    )
+
+    required_fields = set(
+        requirements
+        .get(
+            "required_field_components",
+            [],
+        )
+    )
+
+    available = set(
+        capability
+        .get(
+            "available_inputs",
+            [],
+        )
+    )
+
+    unavailable = set(
+        capability
+        .get(
+            "unavailable_inputs",
+            [],
+        )
+    )
+
+    missing = set(
+        required_inputs
+        -
+        available
+    )
+
+    missing.update(
+        required_external
+        &
+        unavailable
+    )
+
+    missing.update(
+        required_fields
+        &
+        unavailable
+    )
+
+    if (
+        required_representation
+        is not None
+        and
+        required_representation
+        !=
+        current_representation.get(
+            "type"
+        )
+    ):
+
+        missing.add(
+            "representation:"
+            + str(
+                required_representation
+            )
+        )
+
+    if required_dimension is not None:
+
+        actual_dimension = (
+            current_representation
+            .get(
+                "latent_dimension"
+            )
+        )
+
+        if (
+            int(required_dimension)
+            !=
+            int(actual_dimension)
+        ):
+
+            missing.add(
+                "latent_dimension:"
+                f"{required_dimension}"
+                " != current:"
+                f"{actual_dimension}"
+            )
+
+    compatible = (
+        len(missing) == 0
+    )
+
+    result = {
+
+        "current_pipeline_compatible":
+            compatible,
+
+        "missing_inputs":
+            sorted(missing),
+
+        "required_history":
+            int(
+                requirements.get(
+                    "required_history",
+                    0,
+                )
+            ),
+
+        "required_representation":
+            required_representation,
+
+        "required_latent_dimension":
+            required_dimension,
+
+        "current_latent_dimension":
+            current_representation.get(
+                "latent_dimension"
+            ),
+    }
+
+    contract[
+        "implementability"
+    ] = result
+
+    return result
+
+
+# ============================================================
+# Main validation
+# ============================================================
+
+def validate_algorithm_contract(
+    contract: Dict[str, Any],
+) -> List[str]:
+
+    if not isinstance(
+        contract,
+        dict,
+    ):
+
+        raise AlgorithmContractError(
+            "Algorithm contract must be a dict."
+        )
+
+    required = {
+        "candidate_id",
+        "name",
+        "hypothesis",
+        "representation",
+        "dynamics",
+        "training",
+        "evaluation",
+        "data_policy",
+    }
+
+    missing = sorted(
+        required
+        -
+        set(contract)
+    )
+
+    if missing:
+
+        raise AlgorithmContractError(
+            "Missing required fields: "
+            +
+            ", ".join(
+                missing
+            )
+        )
+
+    validate_data_policy(
+        contract
+    )
+
+    leakage = (
+        detect_final_test_access(
+            contract
+        )
+    )
+
+    if leakage:
+
+        raise AlgorithmContractError(
+            "Actual final-test data access "
+            "detected in: "
+            +
+            ", ".join(
+                leakage
+            )
+        )
+
+    capability = (
+        load_capability_profile()
+    )
+
+    requirements = contract.setdefault(
+        "implementation_requirements",
+        {},
+    )
+
+    # --------------------------------------------------------
+    # Force current data representation as default.
+    # Do not silently change it if explicitly specified.
+    # --------------------------------------------------------
+
+    requirements.setdefault(
+        "required_representation",
+        capability[
+            "representation"
+        ][
+            "type"
+        ],
+    )
+
+    requirements.setdefault(
+        "required_latent_dimension",
+        capability[
+            "representation"
+        ][
+            "latent_dimension"
+        ],
+    )
+
+    requirements.setdefault(
+        "required_inputs",
+        [
+            "latent_state",
+        ],
+    )
+
+    requirements.setdefault(
+        "required_history",
+        0,
+    )
+
+    requirements.setdefault(
+        "required_external_parameters",
+        [],
+    )
+
+    requirements.setdefault(
+        "required_field_components",
+        [],
+    )
+
+    implementability = (
+        validate_implementability(
+            contract
+        )
+    )
+
+    warnings = []
+
+    if not implementability[
+        "current_pipeline_compatible"
+    ]:
+
+        warnings.append(
+            "Candidate is not executable "
+            "under the current capability profile: "
+            +
+            ", ".join(
+                implementability[
+                    "missing_inputs"
+                ]
+            )
+        )
+
+    novelty = (
+        contract
+        .get(
+            "hypothesis",
+            {}
+        )
+        .get(
+            "novelty_status"
+        )
+    )
+
+    if novelty in {
+        "verified_novel",
+        "novel",
+        "definitely_novel",
+    }:
+
+        warnings.append(
+            "Novelty claim requires external verification."
+        )
+
+    return warnings

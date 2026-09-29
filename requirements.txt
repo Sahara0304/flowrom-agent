@@ -1,0 +1,6 @@
+numpy
+pyvista
+requests
+openai
+pyyaml
+pandas

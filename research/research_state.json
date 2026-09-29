@@ -1,0 +1,498 @@
+{
+  "version": 3,
+  "research_cycle": 10,
+  "status": "cycle_complete",
+  "current_question": null,
+  "current_hypothesis": null,
+  "active_hypotheses": [],
+  "hypothesis_history": [
+    {
+      "hypothesis_id": "BOOTSTRAP_H1",
+      "name": "Regime-dependent latent linear operator family",
+      "status": "inconclusive",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "inconclusive",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "BOOTSTRAP_H1",
+        "interpretation": "The experiment finished but its output schema did not contain comparable one-step metrics.",
+        "unresolved_questions": [
+          "How should this candidate's output be normalized for scientific comparison?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_000_BOOTSTRAP_H1",
+      "recorded_at": "2026-09-29T06:20:13.760830+00:00"
+    },
+    {
+      "hypothesis_id": "C001_H01",
+      "name": "Non-Markovian delay-coordinate latent operator",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C001_H01",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C001_H01 | Non-Markovian delay-coordinate latent operator\n[AlgorithmAgent] ERROR: AlgorithmAgent.run() missing 2 required positional arguments: 'research_dir' and 'output_dir'\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_001_C001_H01",
+      "recorded_at": "2026-09-29T06:32:15.651095+00:00"
+    },
+    {
+      "hypothesis_id": "C001_H02",
+      "name": "Physically structured divergence-free latent coordinates",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C001_H02",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C001_H02 | Physically structured divergence-free latent coordinates\n[AlgorithmAgent] ERROR: AlgorithmAgent.run() missing 2 required positional arguments: 'research_dir' and 'output_dir'\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_001_C001_H02",
+      "recorded_at": "2026-09-29T06:32:16.198026+00:00"
+    },
+    {
+      "hypothesis_id": "C001_H03",
+      "name": "Multi-scale operator decomposition into slow manifold and fast fluctuation correction",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C001_H03",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C001_H03 | Multi-scale operator decomposition into slow manifold and fast fluctuation correction\n[AlgorithmAgent] ERROR: AlgorithmAgent.run() missing 2 required positional arguments: 'research_dir' and 'output_dir'\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_001_C001_H03",
+      "recorded_at": "2026-09-29T06:32:16.741611+00:00"
+    },
+    {
+      "hypothesis_id": "C002_H01",
+      "name": "Symplectic / energy-preserving geometric reduction",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C002_H01",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"latent_dim does not match the approved algorithm contract\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 183, in run_smoke_test\\n    model = CandidateModel(\\n        latent_dim=latent_dim,\\n        seed=0,\\n    )\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\implementation\\\\model.py\\\", line 20, in __init__\\n    raise ValueError(\\n    ...<2 lines>...\\n    )\\nValueError: latent_dim does not match the approved algorithm contract\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_002_C002_H01",
+      "recorded_at": "2026-09-29T06:42:51.576764+00:00"
+    },
+    {
+      "hypothesis_id": "C002_H02",
+      "name": "Exogenous-parameter-conditioned local Koopman / regime-aware linear operator",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C002_H02",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"latent_dim does not match the approved algorithm contract\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 183, in run_smoke_test\\n    model = CandidateModel(\\n        latent_dim=latent_dim,\\n        seed=0,\\n    )\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\algorithms\\\\discovered\\\\implementation\\\\model.py\\\", line 20, in __init__\\n    raise ValueError(\\n    ...<2 lines>...\\n    )\\nValueError: latent_dim does not match the approved algorithm contract\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_002_C002_H02",
+      "recorded_at": "2026-09-29T06:50:28.413827+00:00"
+    },
+    {
+      "hypothesis_id": "C002_H03",
+      "name": "Sparse symbolic identification with learned closure residual",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C002_H03",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n======================================================================\nFLOWROM ALGORITHM AGENT\n======================================================================\n[AlgorithmAgent] Active hypothesis: C002_H03 | Sparse symbolic identification with learned closure residual\n\n[AlgorithmAgent] Loading research state...\n\n[AlgorithmAgent] Using hypothesis from Research Agent.\n\n[AlgorithmAgent] Selected hypothesis:\nSparse symbolic identification with learned closure residual\n[AlgorithmAgent] Source: research_agent\n\n[AlgorithmAgent] Generating algorithm contract...\n\n[AlgorithmAgent] Validating algorithm contract...\n\n[AlgorithmAgent] Contract validation failed:\n  检测到对 final-test 数据的实际访问。\n禁止的位置：\n  - representation.normalization\n\n候选算法只能使用 development_train 和 development_validation。\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 148, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 108, in main\n    print(\n    ~~~~~^\n        json.dumps(\n        ^^^^^^^^^^^\n    ...<4 lines>...\n        )\n        ^\n    )\n    ^\nUnicodeEncodeError: 'gbk' codec can't encode character '\\u2212' in position 1601: illegal multibyte sequence\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_002_C002_H03",
+      "recorded_at": "2026-09-29T06:50:47.750659+00:00"
+    },
+    {
+      "hypothesis_id": "C003_H01",
+      "name": "Bayesian hierarchical-shrinkage latent linear operator",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C003_H01",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 16, in <module>\n    from agents.algorithm_agent import AlgorithmAgent  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Projects\\flowrom-agent\\agents\\algorithm_agent.py\", line 11, in <module>\n    from runtime.algorithm_contract import (\n    ...<2 lines>...\n    )\nImportError: cannot import name 'ContractValidationError' from 'runtime.algorithm_contract' (D:\\Projects\\flowrom-agent\\runtime\\algorithm_contract.py)\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_003_C003_H01",
+      "recorded_at": "2026-09-29T07:14:30.432809+00:00"
+    },
+    {
+      "hypothesis_id": "C003_H02",
+      "name": "POD-energy-band-structured sparse latent linear operator",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C003_H02",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 16, in <module>\n    from agents.algorithm_agent import AlgorithmAgent  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Projects\\flowrom-agent\\agents\\algorithm_agent.py\", line 11, in <module>\n    from runtime.algorithm_contract import (\n    ...<2 lines>...\n    )\nImportError: cannot import name 'ContractValidationError' from 'runtime.algorithm_contract' (D:\\Projects\\flowrom-agent\\runtime\\algorithm_contract.py)\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_003_C003_H02",
+      "recorded_at": "2026-09-29T07:14:30.918728+00:00"
+    },
+    {
+      "hypothesis_id": "C003_H03",
+      "name": "Energy-decomposed linear core plus low-energy-tail residual correction",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C003_H03",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 16, in <module>\n    from agents.algorithm_agent import AlgorithmAgent  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Projects\\flowrom-agent\\agents\\algorithm_agent.py\", line 11, in <module>\n    from runtime.algorithm_contract import (\n    ...<2 lines>...\n    )\nImportError: cannot import name 'ContractValidationError' from 'runtime.algorithm_contract' (D:\\Projects\\flowrom-agent\\runtime\\algorithm_contract.py)\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_003_C003_H03",
+      "recorded_at": "2026-09-29T07:14:31.406802+00:00"
+    },
+    {
+      "hypothesis_id": "C004_H01",
+      "name": "Non-modal transient growth in the 52D latent operator",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C004_H01",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 29, in <module>\n    from agents.algorithm_agent import AlgorithmAgent\n  File \"D:\\Projects\\flowrom-agent\\agents\\algorithm_agent.py\", line 12, in <module>\n    from runtime.algorithm_contract import (\n    ...<2 lines>...\n    )\nImportError: cannot import name 'ContractValidationError' from 'runtime.algorithm_contract' (D:\\Projects\\flowrom-agent\\runtime\\algorithm_contract.py)\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_004_C004_H01",
+      "recorded_at": "2026-09-29T07:24:16.293651+00:00"
+    },
+    {
+      "hypothesis_id": "C004_H02",
+      "name": "Information-theoretic necessity test for latent nonlinearity",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C004_H02",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 29, in <module>\n    from agents.algorithm_agent import AlgorithmAgent\n  File \"D:\\Projects\\flowrom-agent\\agents\\algorithm_agent.py\", line 12, in <module>\n    from runtime.algorithm_contract import (\n    ...<2 lines>...\n    )\nImportError: cannot import name 'ContractValidationError' from 'runtime.algorithm_contract' (D:\\Projects\\flowrom-agent\\runtime\\algorithm_contract.py)\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_004_C004_H02",
+      "recorded_at": "2026-09-29T07:24:16.779249+00:00"
+    },
+    {
+      "hypothesis_id": "C004_H03",
+      "name": "Recurrence-density-conditioned heterogeneity of latent linear predictability",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C004_H03",
+        "interpretation": "The candidate could not be scientifically evaluated because execution failed.",
+        "error": "run_algorithm.py failed.\nSTDOUT:\n\nSTDERR:\nTraceback (most recent call last):\n  File \"D:\\Projects\\flowrom-agent\\scripts\\run_algorithm.py\", line 29, in <module>\n    from agents.algorithm_agent import AlgorithmAgent\n  File \"D:\\Projects\\flowrom-agent\\agents\\algorithm_agent.py\", line 12, in <module>\n    from runtime.algorithm_contract import (\n    ...<2 lines>...\n    )\nImportError: cannot import name 'ContractValidationError' from 'runtime.algorithm_contract' (D:\\Projects\\flowrom-agent\\runtime\\algorithm_contract.py)\n\nERROR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure scientific or purely infrastructural?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_004_C004_H03",
+      "recorded_at": "2026-09-29T07:24:17.272832+00:00"
+    },
+    {
+      "hypothesis_id": "H_fallback_residual",
+      "name": "Weak structured residual around global latent dynamics",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H_fallback_residual",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "algorithm_result.json belongs to a different hypothesis; refusing to continue with stale artifacts.",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_007_H_fallback_residual",
+      "recorded_at": "2026-09-29T08:15:00.824348+00:00"
+    },
+    {
+      "hypothesis_id": "H_fallback_memory",
+      "name": "Higher-order latent memory",
+      "status": "not_implementable",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "not_implementable",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H_fallback_memory",
+        "interpretation": "The hypothesis was accepted as a scientific idea, but the current representation/runner lacks the capabilities required to execute it.",
+        "missing_inputs": [
+          "runner_explicit_history_input"
+        ],
+        "implementability": {
+          "current_pipeline_compatible": false,
+          "missing_inputs": [
+            "runner_explicit_history_input"
+          ],
+          "required_history": 1,
+          "required_representation": "POD_latent",
+          "required_latent_dimension": 52
+        },
+        "unresolved_questions": [
+          "What capability upgrade is required to evaluate this hypothesis?",
+          "Can a lower-capability discriminating experiment test part of the hypothesis?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_007_H_fallback_memory",
+      "recorded_at": "2026-09-29T08:15:42.351613+00:00"
+    },
+    {
+      "hypothesis_id": "H_fallback_lift",
+      "name": "Low-dimensional nonlinear lifting",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H_fallback_lift",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"rollout ��� shape ����(10, 52), ���� (11, 52)\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 252, in run_smoke_test\\n    raise ValueError(\\n    ...<3 lines>...\\n    )\\nValueError: rollout ��� shape ����(10, 52), ���� (11, 52)\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_007_H_fallback_lift",
+      "recorded_at": "2026-09-29T08:18:08.460540+00:00"
+    },
+    {
+      "hypothesis_id": "C008_H01",
+      "name": "Invertible coordinate warping with global linear core (Normalizing-Flow Koopman)",
+      "status": "not_implementable",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "not_implementable",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C008_H01",
+        "interpretation": "The hypothesis was accepted as a scientific idea, but the current representation/runner lacks the capabilities required to execute it.",
+        "missing_inputs": [
+          "dynamics:nonlinear_lifting"
+        ],
+        "implementability": {
+          "current_pipeline_compatible": false,
+          "missing_inputs": [
+            "dynamics:nonlinear_lifting"
+          ],
+          "required_history": 0,
+          "required_representation": "POD_latent",
+          "required_latent_dimension": 52,
+          "dynamics_type": "nonlinear_lifting",
+          "supported_dynamics": [
+            "autoregressive",
+            "delay_coordinate",
+            "linear_operator",
+            "residual_operator"
+          ]
+        },
+        "unresolved_questions": [
+          "What capability upgrade is required to evaluate this hypothesis?",
+          "Can a lower-capability discriminating experiment test part of the hypothesis?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_008_C008_H01",
+      "recorded_at": "2026-09-29T08:32:35.292433+00:00"
+    },
+    {
+      "hypothesis_id": "C008_H02",
+      "name": "State-dependent stochastic forcing with structured mean and learned multiplicative innovation",
+      "status": "not_implementable",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "not_implementable",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C008_H02",
+        "interpretation": "The hypothesis was accepted as a scientific idea, but the current representation/runner lacks the capabilities required to execute it.",
+        "missing_inputs": [
+          "dynamics:stochastic_sde"
+        ],
+        "implementability": {
+          "current_pipeline_compatible": false,
+          "missing_inputs": [
+            "dynamics:stochastic_sde"
+          ],
+          "required_history": 0,
+          "required_representation": "POD_latent",
+          "required_latent_dimension": 52,
+          "dynamics_type": "stochastic_sde",
+          "supported_dynamics": [
+            "autoregressive",
+            "delay_coordinate",
+            "linear_operator",
+            "residual_operator"
+          ]
+        },
+        "unresolved_questions": [
+          "What capability upgrade is required to evaluate this hypothesis?",
+          "Can a lower-capability discriminating experiment test part of the hypothesis?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_008_C008_H02",
+      "recorded_at": "2026-09-29T08:33:20.462406+00:00"
+    },
+    {
+      "hypothesis_id": "C008_H03",
+      "name": "Rotational-dissipative spectral decomposition with band-wise skew/symmetric split",
+      "status": "not_implementable",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "not_implementable",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "C008_H03",
+        "interpretation": "The hypothesis was accepted as a scientific idea, but the current representation/runner lacks the capabilities required to execute it.",
+        "missing_inputs": [
+          "runner_explicit_history_input",
+          "velocity_components"
+        ],
+        "implementability": {
+          "current_pipeline_compatible": false,
+          "missing_inputs": [
+            "runner_explicit_history_input",
+            "velocity_components"
+          ],
+          "required_history": 1,
+          "required_representation": "POD_latent",
+          "required_latent_dimension": 52,
+          "dynamics_type": "residual_operator",
+          "supported_dynamics": [
+            "autoregressive",
+            "delay_coordinate",
+            "linear_operator",
+            "residual_operator"
+          ]
+        },
+        "unresolved_questions": [
+          "What capability upgrade is required to evaluate this hypothesis?",
+          "Can a lower-capability discriminating experiment test part of the hypothesis?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_008_C008_H03",
+      "recorded_at": "2026-09-29T08:33:53.838356+00:00"
+    },
+    {
+      "hypothesis_id": "H1",
+      "name": "Graph-Laplacian-structured linear operator with learnable sparse adjacency",
+      "status": "inconclusive",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "inconclusive",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H1",
+        "interpretation": "The experiment finished, but its output schema did not contain comparable one-step metrics.",
+        "unresolved_questions": [
+          "How should this candidate's output be normalized for scientific comparison?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_010_H1",
+      "recorded_at": "2026-09-29T09:05:37.956336+00:00"
+    },
+    {
+      "hypothesis_id": "H2",
+      "name": "Continuous-time normal-form linear operator via matrix-exponential parameterization",
+      "status": "execution_failed",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "execution_failed",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H2",
+        "interpretation": "The candidate could not be evaluated because the implementation or execution pipeline failed. This is not scientific evidence against the hypothesis.",
+        "error": "run_smoke_test.py failed.\nSTDOUT:\n\n======================================================================\nFLOWROM SMOKE TEST\n======================================================================\n\n{\n  \"status\": \"failed\",\n  \"error\": \"predict_next ��� shape ����(1, 52), ���� (52,)\",\n  \"traceback\": \"Traceback (most recent call last):\\n  File \\\"D:\\\\Projects\\\\flowrom-agent\\\\tools\\\\model_runner.py\\\", line 216, in run_smoke_test\\n    raise ValueError(\\n    ...<3 lines>...\\n    )\\nValueError: predict_next ��� shape ����(1, 52), ���� (52,)\\n\"\n}\n\n[FAILED] Smoke test failed.\n\nSTDERR:\n",
+        "unresolved_questions": [
+          "Can the hypothesis be evaluated after the implementation or execution failure is fixed?",
+          "Was the failure caused by the scientific mechanism or only by the execution infrastructure?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_010_H2",
+      "recorded_at": "2026-09-29T09:11:39.095977+00:00"
+    },
+    {
+      "hypothesis_id": "H3",
+      "name": "Mass-conserving diffusion-reaction latent operator with explicit 26-26 reactant/product block split",
+      "status": "inconclusive",
+      "scientific_claim_status": "not_evaluable",
+      "verdict": {
+        "status": "inconclusive",
+        "scientific_claim_status": "not_evaluable",
+        "hypothesis_id": "H3",
+        "interpretation": "The experiment finished, but its output schema did not contain comparable one-step metrics.",
+        "unresolved_questions": [
+          "How should this candidate's output be normalized for scientific comparison?"
+        ]
+      },
+      "artifact_dir": "D:\\Projects\\flowrom-agent\\research\\history\\cycle_010_H3",
+      "recorded_at": "2026-09-29T09:15:02.114386+00:00"
+    }
+  ],
+  "unresolved_questions": [
+    "How should this candidate's output be normalized for scientific comparison?"
+  ],
+  "research_strategy": {
+    "mode": "parallel_exploration",
+    "reason": "All 21 prior hypotheses failed purely for infrastructural reasons (missing imports, contract mismatches, stale-artifact refusal, smoke-test shape mismatches, or 'not_implementable' verdicts for unsupported dynamics types or history inputs). No scientific evidence is available against any mechanism. We therefore introduce three genuinely new operator constructions that have not appeared in any prior attempt: (1) a graph-Laplacian-structured linear operator with a learnable sparse adjacency (a fundamentally different inductive bias — graph topology — from the dense or POD-banded structures previously tried), (2) a matrix-exponential parameterization of a continuous-time generator (a non-Euclidean parameterization, never explored here, that guarantees invertibility and exposes a natural multi-step rollout), and (3) a mass-conserving diffusion-reaction operator with an explicit 26-26 reactant/product block split (combines a hard conservation constraint with an explicit reaction term, a combination not present in any prior hypothesis, including the symplectic C002_H01 which used a much stronger single-form conservation). All three are compatible with the currently supported dynamics types (linear_operator for H1/H2, residual_operator for H3), with required_history=0, and with the 52D POD-latent contract, so they avoid the previous 'not_implementable' failure mode. They are mutually discriminable by qualitative spectral properties (real vs. complex spectrum; positive determinant; mass conservation), which the baseline single global linear operator cannot simultaneously exhibit."
+  },
+  "created_at": "2026-09-29T06:20:13.760798+00:00",
+  "updated_at": "2026-09-29T09:15:02.137199+00:00"
+}

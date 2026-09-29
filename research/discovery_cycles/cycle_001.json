@@ -1,0 +1,97 @@
+{
+  "research_cycle": 1,
+  "generated_at": "2026-09-29T06:32:14.697606+00:00",
+  "strategy": {
+    "mode": "parallel_exploration_with_normalized_evaluation",
+    "reason": "Cycle 0 produced no evaluable scientific signal because the output schema lacked comparable one-step metrics. Before committing to any single mechanism, we must (a) establish a normalized, comparable evaluation protocol on development_train/development_validation, and (b) explore three mechanism families in parallel so that the experimental outcomes can falsify competing scientific explanations rather than merely picking among architecture variants of the same idea.",
+    "source": "llm",
+    "literature_queries": [
+      "How should this candidate's output be normalized for scientific comparison?"
+    ],
+    "literature_count": 0
+  },
+  "hypotheses": [
+    {
+      "id": "C001_H01",
+      "name": "Non-Markovian delay-coordinate latent operator",
+      "scientific_question": "Does the system require explicit temporal memory (finite history / delay embedding) in the latent state, beyond a Markovian linear operator?",
+      "mechanism": "Replace the Markovian latent update z_{t+1} = A z_t with a delay-coordinate update that depends on a finite window of past latent states. This introduces a temporal-memory mechanism: the present latent evolution is a function of a trajectory segment, not a single point. The learned operator acts on Hankel-like stacks of delayed states.",
+      "mathematical_form": "Define Z_t = [z_t, z_{t-1}, ..., z_{t-k}]. Propose: Z_{t+1} = A_eff Z_t + b_eff, or equivalently z_{t+1} = sum_{i=0..k} A_i z_{t-i} + b. Restrict k to small values (k in {1,2,3}) to retain parsimony. Compare against a Markovian baseline on the same encoder/decoder.",
+      "motivation": "Koopman theory guarantees a linear infinite-dimensional operator only in delay-embedded space. A finite-dimensional Markovian truncation can fail when the underlying dynamics has slow-decaying temporal correlations. The bootstrap experiment's inconclusive regime-dependent behavior is consistent with insufficient temporal receptive field rather than insufficient linear rank.",
+      "explanation_of_previous_failure": "If the BOOTSTRAP_H1 inconclusive verdict reflects genuine failure, the most parsimonious explanation is that a purely Markovian latent linear operator cannot represent the system's temporal correlation structure, and the model collapsed regime-by-regime because of this missing memory mechanism rather than missing nonlinear capacity.",
+      "distinguishing_prediction": "If non-Markovian memory is the true missing mechanism, then increasing delay depth k should (i) reduce normalized one-step error on development_validation by a margin larger than any equivalent increase in latent width, and (ii) the residual error autocorrelation in time should drop with k, while it should not drop with added width under the Markovian baseline.",
+      "minimum_experiment": [
+        "Fix evaluation: compute normalized one-step MSE on development_validation for a held-out set of initial conditions, and autocorrelation of normalized residual error over a multi-step rollout.",
+        "Run baseline: Markovian linear latent operator (z_{t+1} = A z_t + b) with width W.",
+        "Run H1: same encoder/decoder and width W, but with delay depth k=2 (i.e., z_{t+1} = A_0 z_t + A_1 z_{t-1} + b).",
+        "Falsification criterion: if the k=2 model fails to beat the Markovian baseline by at least one normalized-error standard deviation across regimes on development_validation, AND if increasing k monotonically does not reduce residual autocorrelation, then H1 is falsified as the dominant missing mechanism."
+      ],
+      "expected_observation_if_true": "Delay-coordinate model reduces normalized one-step error versus Markovian baseline with matched parameter count; residual error time-autocorrelation decays with increasing k; improvement is regime-uniform rather than concentrated in a single regime.",
+      "expected_observation_if_false": "Adding delay terms either does not change the error meaningfully or degrades it; residual autocorrelation is unchanged; Markovian baseline with more width matches or beats delay model.",
+      "risks": [
+        "If the encoder already embeds temporal context implicitly, delay terms may add noise without signal.",
+        "Delay-coordinate models can overfit short trajectories; small training trajectories could produce spurious improvements."
+      ],
+      "relation_to_existing_methods": "Closely related to Hankel-matrix / DMD-with-delays and to linear recurrent neural networks with explicit tapped-delay lines; differs from generic RNNs because the operator remains linear in stacked coordinates rather than being a learned nonlinear recurrence.",
+      "novelty_status": "verification_incomplete",
+      "proposed_id": "H1",
+      "generation_cycle": 1,
+      "generation_source": "llm"
+    },
+    {
+      "id": "C001_H02",
+      "name": "Physically structured divergence-free latent coordinates",
+      "scientific_question": "Does enforcing physically motivated coordinate structure (e.g., divergence-free, mass-conserving) in the latent space produce more stable and accurate rollouts than an unconstrained learned linear latent space?",
+      "mechanism": "Replace the arbitrary linear encoder/decoder with a coordinate transformation whose columns are constrained to a physically motivated subspace (e.g., a divergence-free basis derived from the discretized continuity equation, or a mass/momentum-conserving lifting). The latent operator is then a learnable linear map within that constrained manifold. This is a coordinate-transformation / structural-prior mechanism, not a capacity mechanism.",
+      "mathematical_form": "Let P be a linear projector onto a physically constrained subspace (e.g., div-free modes of the discretized operator). Define z_t = P x_t and propose x_hat_{t+1} = P^T (A z_t + b). Loss is on the decoded state against ground truth on development_validation. The constraint is that columns of P and P^T lie in a physically admissible subspace.",
+      "motivation": "The bootstrap regime-dependent latent operator family likely failed because the learned latent basis has no physical grounding: it can assign latent mass to modes that violate conservation or smoothness constraints, leading to drift. If the bottleneck is geometric / structural, adding capacity (wider latent, deeper MLP) cannot fix it.",
+      "explanation_of_previous_failure": "If BOOTSTRAP_H1 underperforms in a regime-dependent way, it may be because the unconstrained linear latent mixes physically incompatible modes, and the learned operator simply averages incompatible behaviors per regime rather than respecting underlying physical constraints.",
+      "distinguishing_prediction": "If physically structured coordinates are the dominant mechanism, then a divergence-free / constraint-respecting basis should produce (i) lower normalized multi-step rollout error than an unconstrained learned basis of equal rank on development_validation, AND (ii) conserved physical diagnostics (e.g., divergence, total mass) should remain within a tighter bound across long rollouts, whereas an unconstrained learned basis will drift in those diagnostics even when pointwise error looks acceptable.",
+      "minimum_experiment": [
+        "Compute baseline: an unconstrained linear encoder/decoder + linear latent operator trained to the same normalized loss on development_train.",
+        "Compute H2: same training pipeline but with encoder/decoder constrained to a divergence-free (or other physically admissible) subspace of equal rank.",
+        "Track two diagnostics on development_validation: normalized one-step error, and a conservation diagnostic (e.g., divergence or total mass) drift over multi-step rollouts.",
+        "Falsification criterion: if the physically constrained model does not achieve lower normalized multi-step error than the unconstrained baseline, OR if the conservation diagnostic does not drift more slowly in the unconstrained baseline, then H2 is falsified as the dominant mechanism."
+      ],
+      "expected_observation_if_true": "Constrained-coordinates model has lower multi-step rollout error and substantially slower drift in conservation diagnostics than unconstrained baseline; the gap widens with rollout horizon.",
+      "expected_observation_if_false": "Constrained-coordinates model matches or underperforms the unconstrained baseline on both pointwise error and conservation diagnostics; the constraint appears to cost expressivity without structural benefit.",
+      "risks": [
+        "Constructing the physically constrained basis may require assumptions (e.g., specific discretization) that are not aligned with the dataset; the constraint may simply be too restrictive.",
+        "If conservation is already approximately satisfied by the dataset's resolution, the signal may be weak."
+      ],
+      "relation_to_existing_methods": "Related to POD / DMD on divergence-free bases, structure-preserving model reduction, and constrained autoencoders. Differs from generic physics-informed losses because the constraint is encoded architecturally, not via a weighted penalty.",
+      "novelty_status": "verification_incomplete",
+      "proposed_id": "H2",
+      "generation_cycle": 1,
+      "generation_source": "llm"
+    },
+    {
+      "id": "C001_H03",
+      "name": "Multi-scale operator decomposition into slow manifold and fast fluctuation correction",
+      "scientific_question": "Are errors caused by entanglement of slow and fast dynamics within a single operator, and does explicit spectral decomposition (slow/fast) outperform a single-scale operator of equivalent capacity?",
+      "mechanism": "Decompose the evolution operator into two components acting on different time scales: a slow component that advances a coarse state along a learned slow manifold, and a fast-correction component that adjusts for fast fluctuations conditioned on the slow state. This is an operator-decomposition / multi-scale mechanism, distinct from adding width, depth, or memory.",
+      "mathematical_form": "Let z_t^s be the slow-state (e.g., low-pass filtered latent) and z_t^f the fast-fluctuation component. Propose: z_{t+1}^s = A_s z_t^s + b_s, and z_{t+1}^f = A_f(z_t^s) z_t^f + b_f(z_t^s), where A_f depends on z_t^s. The full latent update is z_{t+1} = z_{t+1}^s + z_{t+1}^f. The slow/fast split is implemented by a fixed or learnable filter (e.g., low-rank projection / time-averaging).",
+      "motivation": "Fluid dynamics typically span multiple time scales. A single linear operator must simultaneously model both, forcing it to compromise. The bootstrap experiment's regime-dependent inconclusive behavior could reflect that the linear operator was averaging over incompatible scales.",
+      "explanation_of_previous_failure": "If the regime-dependence observed (or suspected) in BOOTSTRAP_H1 arises because the latent operator cannot represent two distinct scales simultaneously, then a single-scale linear operator will always trade off one regime against another; decomposition is the structural fix.",
+      "distinguishing_prediction": "If multi-scale decomposition is the dominant mechanism, then (i) the spectrum of the residual error should show a band that the single-operator model cannot suppress, and the decomposed model should reduce error predominantly in that spectral band; (ii) the slow-component error and the fast-component error should respond differently to regularization — slowing the fast component (e.g., via time-averaging) should not affect the slow component's error, and vice versa, in a single-scale model these would be coupled.",
+      "minimum_experiment": [
+        "Run baseline: single linear latent operator with width W on development_train.",
+        "Run H3: same total parameter count, but split into slow operator on a time-averaged latent and a state-conditioned fast-correction operator.",
+        "Compute spectral decomposition of normalized residual error on development_validation (e.g., by frequency band).",
+        "Falsification criterion: if the multi-scale model does not reduce residual error in the fast band relative to the single-operator baseline, OR if slow-band and fast-band errors are not independently tunable in the multi-scale model, then H3 is falsified as the dominant mechanism."
+      ],
+      "expected_observation_if_true": "Multi-scale model reduces error in the fast spectral band; slow- and fast-band errors become independently sensitive to their respective hyperparameters; combined error drops below single-operator baseline on development_validation.",
+      "expected_observation_if_false": "Single-operator baseline with matched parameter count matches or beats the decomposed model; spectral error profile is unchanged; slow/fast components appear coupled and not separately addressable.",
+      "risks": [
+        "Defining and separating slow/fast scales requires a filter choice; results may depend on this choice rather than the mechanism itself.",
+        "If the system is dominated by a single scale, decomposition adds overhead without benefit."
+      ],
+      "relation_to_existing_methods": "Related to multi-resolution DMD, multiscale reduced-order modeling, and equation-free / heterogeneous multiscale methods. Differs from stacked time-window models because the decomposition is scale-based, not lag-based, and the components interact via conditioning rather than concatenation.",
+      "novelty_status": "verification_incomplete",
+      "proposed_id": "H3",
+      "generation_cycle": 1,
+      "generation_source": "llm"
+    }
+  ],
+  "literature": []
+}

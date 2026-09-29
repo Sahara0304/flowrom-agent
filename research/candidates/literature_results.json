@@ -1,0 +1,127 @@
+{
+  "fluid reduced order model latent dynamics": [
+    {
+      "paper_id": "9d2c7ce971b6feea68b5b1b339389e2f4d4a0e62",
+      "title": "Learning Latent Space Dynamics with Model-Form Uncertainties: A Stochastic Reduced-Order Modeling Approach",
+      "abstract": "This paper presents a probabilistic approach to represent and quantify model-form uncertainties in the reduced-order modeling of complex systems using operator inference techniques. Such uncertainties can arise in the selection of an appropriate state-space representation, in the projection step that underlies many reduced-order modeling methods, or as a byproduct of considerations made during training, to name a few. Following previous works in the literature, the proposed method captures these uncertainties by expanding the approximation space through the randomization of the projection matrix. This is achieved by combining Riemannian projection and retraction operators - acting on a subset of the Stiefel manifold - with an information-theoretic formulation. The efficacy of the approach is assessed on canonical problems in fluid mechanics by identifying and quantifying the impact of model-form uncertainties on the inferred operators.",
+      "year": 2024,
+      "authors": [
+        "Jin-Yi Yong",
+        "R. Geelen",
+        "Johann Guilleminot"
+      ],
+      "url": "https://www.semanticscholar.org/paper/9d2c7ce971b6feea68b5b1b339389e2f4d4a0e62",
+      "citation_count": 7,
+      "open_access_pdf": {
+        "url": "",
+        "status": null,
+        "license": null,
+        "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/2409.00220, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      }
+    },
+    {
+      "paper_id": "d05ee47d64488aa71847454e02327bdcd4fee824",
+      "title": "A non‐linear non‐intrusive reduced order model of fluid flow by auto‐encoder and self‐attention deep learning methods",
+      "abstract": "This paper presents a new nonlinear non‐intrusive reduced‐order model (NL‐NIROM) that outperforms traditional proper orthogonal decomposition (POD)‐based reduced order model (ROM). This improvement is achieved through the use of auto‐encoder (AE) and self‐attention based deep learning methods. The novelty of this work is that it uses stacked auto‐encoder (SAE) network to project the original high‐dimensional dynamical systems onto a low dimensional nonlinear subspace and predict fluid dynamics using an self‐attention based deep learning method. This paper introduces a new model reduction neural network architecture for fluid flow problem, as well as, a linear non‐intrusive reduced order model (L‐NIROM) based on POD and self‐attention mechanism. In the NL‐NIROM, the SAE network compresses high‐dimensional physical information into several much smaller sized representations in a reduced latent space. These representations are expressed by a number of codes in the middle layer of SAE neural network. Then, those codes at different time levels are trained to construct a set of hyper‐surfaces using self‐attention based deep learning methods. The inputs of the self‐attention based network are previous time levels' codes and the outputs of the network are current time levels' codes. The codes at current time level are then projected back to the original full space by the decoder layers in the SAE network. The capability of the new model, NL‐NIROM, is demonstrated through two test cases: flow past a cylinder, and a lock exchange. The results show that the NL‐NIROM is more accurate than the popular model reduction method namely POD based L‐NIROM.",
+      "year": 2023,
+      "authors": [
+        "R. Fu",
+        "D. Xiao",
+        "Ionel M. Navon",
+        "F. Fang",
+        "L. Yang",
+        "C. Wang",
+        "S. Cheng"
+      ],
+      "url": "https://www.semanticscholar.org/paper/d05ee47d64488aa71847454e02327bdcd4fee824",
+      "citation_count": 65,
+      "open_access_pdf": {
+        "url": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/nme.7240",
+        "status": "BRONZE",
+        "license": null,
+        "disclaimer": "Notice: Paper or abstract available at https://api.unpaywall.org/v2/10.1002/nme.7240?email=<INSERT_YOUR_EMAIL> or https://doi.org/10.1002/nme.7240, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      }
+    },
+    {
+      "paper_id": "3afddd9dcc58aa41c0486d55f4ddba04b484b9a6",
+      "title": "VIVALDy: A hybrid generative reduced-order model for turbulent flows, applied to vortex-induced vibrations",
+      "abstract": "Developing reduced-order models applicable to fluid-dynamics problems involving complex geometries and different flow conditions remains a critical challenge for turbulent flows. This study introduces VIVALDy, a novel machine-learning framework that employs a hybrid $\\beta$-Variational Autoencoder-Generative Adversarial Network ($\\beta$-VAE-GAN) architecture with masked convolutions to extract dominant flow features into a compact latent space while preserving fidelity at solid-fluid interfaces. A bidirectional transformer then models the temporal evolution of these features, learning to predict flow trajectories from minimal sensor inputs. This two-stage approach enables the transformer to map sensor measurements to dominant flow variables identified by the autoencoder, advancing reduced-order modeling capabilities for real-time flow prediction. The effectiveness of the framework is demonstrated through application to a problem relevant to vortex-induced vibration (VIV) energy harvesting systems, reconstructing the turbulent flow around a one-degree-of-freedom moving cylinder. Validated against experimental data spanning fluid-structure interaction regimes of interest, VIVALDy accurately predicts different flow states using only the cylinder displacement. The framework demonstrates adequate performance in both reconstruction accuracy and statistical fidelity across diverse operating conditions, enabling efficient prediction of the turbulent flow phenomena governing vortex-induced vibration.",
+      "year": 2025,
+      "authors": [
+        "Niccolo Tonioni",
+        "Lionel Agostini",
+        "Franck Kerherv'e",
+        "L. Cordier",
+        "R. Vinuesa"
+      ],
+      "url": "https://www.semanticscholar.org/paper/3afddd9dcc58aa41c0486d55f4ddba04b484b9a6",
+      "citation_count": 2,
+      "open_access_pdf": {
+        "url": "https://arxiv.org/pdf/2509.24965",
+        "status": "GREEN",
+        "license": "CCBYSA",
+        "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/2509.24965, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      }
+    },
+    {
+      "paper_id": "591d9be98a5c8791666b9bf572350fe0778d17e4",
+      "title": "Reduced-order Model for Fluid Flows via Neural Ordinary Differential Equations",
+      "abstract": "Reduced order models play an important role in the design, optimization and control of dynamical systems. In recent years, there has been an increasing interest in the application of data-driven techniques for model reduction that can decrease the computational burden of numerical solutions, while preserving the most important features of complex physical problems. In this paper, we use the proper orthogonal decomposition to reduce the dimensionality of the model and introduce a novel generative neural ODE (NODE) architecture to forecast the behavior of the temporal coefficients. With this methodology, we replace the classical Galerkin projection with an architecture characterized by the use of a continuous latent space. We exemplify the methodology on the dynamics of the Von Karman vortex street of the flow past a cylinder generated by a Large-eddy Simulation (LES)-based code. We compare the NODE methodology with an LSTM baseline to assess the extrapolation capabilities of the generative model and present some qualitative evaluations of the flow reconstructions.",
+      "year": 2021,
+      "authors": [
+        "C. J. Rojas",
+        "A. Dengel",
+        "M. Ribeiro"
+      ],
+      "url": "https://www.semanticscholar.org/paper/591d9be98a5c8791666b9bf572350fe0778d17e4",
+      "citation_count": 21,
+      "open_access_pdf": {
+        "url": "",
+        "status": null,
+        "license": null,
+        "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/2102.02248, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      }
+    },
+    {
+      "paper_id": "b33e7d0506e61fd7d6a645792792935e00a16703",
+      "title": "A data driven reduced order model of fluid flow by Auto-Encoder and self-attention deep learning methods",
+      "abstract": "This paper presents a new data-driven non-intrusive reduced-order model(NIROM) that outperforms the traditional Proper orthogonal decomposition (POD) based reducedorder model. This is achieved by using Auto-Encoder(AE) and attention-based deep learning methods. The novelty of the present work lies in that it uses Stacked AutoEncoder(SAE) network to project original high-dimensional dynamical systems onto a low dimensional nonlinear subspace and predict the fluid dynamics using an attentionbased deep learning method. A new model reduction neural network architecture for fluid flow problem is presented. The SAE network compresses high-dimensional physical information into several much smaller sized representations in a latent space. These representations are expressed by a number of codes in the middle layer of SAE neural network. Then, those codes at different time levels are trained to construct a set of hyper-surfaces with multi variable response functions using attention-based deep learning methods. The inputs of the attention-based network are previous time levels' codes and the outputs of the network are current time levels' codes. The codes at current time level are then projected back to the original full space by the decoder layers in the SAE network. The capability of this data-driven reduced order model (DDROM) is illustrated numerically by two test cases: flow past a cylinder, and a lock exchange, respectively. The results obtained show that the DDROM performs better in terms of accuracy than the popular model reduction method namely proper orthogonal decomposition. The improvement is assessed by comparison with a high fidelity POD model.",
+      "year": 2021,
+      "authors": [
+        "R. Fu",
+        "D. Xiao",
+        "Ionel M. Navon",
+        "C. Wang"
+      ],
+      "url": "https://www.semanticscholar.org/paper/b33e7d0506e61fd7d6a645792792935e00a16703",
+      "citation_count": 17,
+      "open_access_pdf": {
+        "url": "",
+        "status": null,
+        "license": null,
+        "disclaimer": "Notice: Paper or abstract available at https://arxiv.org/abs/2109.02126, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      }
+    },
+    {
+      "paper_id": "ddfefaac215e929e81b418e9b0f2980f8285733e",
+      "title": "A Data-Driven Reduced-Order Model for Rotary Kiln Temperature Field Prediction Using Autoencoder and TabPFN",
+      "abstract": "The accurate reconstruction of the internal temperature field in rotary kilns is critical for optimizing the clinker calcination process and ensuring energy efficiency. In this study, a rapid and high-fidelity surrogate modeling framework is proposed, utilizing snapshot ensembles generated by full-order Computational Fluid Dynamics (CFD) simulations to reconstruct the temperature field of the axial center section. The framework incorporates a symmetric Autoencoder (AE) coupled with a TabPFN network as its core components. Capitalizing on the kiln’s strong axial symmetry, this reduction–regression system efficiently maps the high-dimensional nonlinear thermodynamic topology of the central section into a compact low-dimensional latent manifold via AE, while utilizing TabPFN to establish a robust mapping between operating boundary conditions and these latent features. By leveraging the In-Context Learning (ICL) mechanism for prior-data fitting, TabPFN effectively overcomes the data scarcity inherent in high-cost CFD sampling. Predictive results demonstrate that the model achieves a coefficient of determination (R2) of 0.897 for latent feature regression, outperforming traditional algorithms by 6.53%. In terms of field reconstruction on the test set, the model yields an average temperature error of 15.31 K. Notably, 93.83% of the nodal errors are confined within a narrow range of 0–50 K, and the reconstructed distributions exhibit high consistency with the CFD benchmarks. Furthermore, compared to the hours required for full-scale simulations, the inference time is reduced to 0.45 s, representing a speedup of four orders of magnitude. Consequently, the predictive system demonstrates excellent accuracy and efficiency, serving as an effective substitute for traditional models to realize online monitoring and intelligent optimization.",
+      "year": 2026,
+      "authors": [
+        "Ya Mao",
+        "Yuhan Li",
+        "Yanhui Lai",
+        "F. Fan"
+      ],
+      "url": "https://www.semanticscholar.org/paper/ddfefaac215e929e81b418e9b0f2980f8285733e",
+      "citation_count": 1,
+      "open_access_pdf": {
+        "url": "https://www.mdpi.com/2076-3417/16/4/2029/pdf?version=1771920941",
+        "status": "GOLD",
+        "license": "CCBY",
+        "disclaimer": "Notice: Paper or abstract available at https://api.unpaywall.org/v2/10.3390/app16042029?email=<INSERT_YOUR_EMAIL> or https://doi.org/10.3390/app16042029, which is subject to the license by the author or copyright owner provided with this content. Please go to the source to verify the license and copyright information for your use."
+      }
+    }
+  ],
+  "fluid reduced order model local switching dynamics": []
+}
